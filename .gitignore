@@ -1,0 +1,10 @@
+node_modules
+build
+coverage
+.vscode
+.vs
+.DS_STORE
+.env
+tmp
+_draft
+_archive
