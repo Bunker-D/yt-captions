@@ -20,6 +20,6 @@
 
 import Route from '@ioc:Adonis/Core/Route';
 
-Route.get( '/', async ( { view } ) => {
-	return view.render( 'home' );
-} );
+Route.get( '/', async ( { view } ) => view.render( 'home' ) );
+
+Route.get( '/*', 'CaptionsController.fetchVideo' );

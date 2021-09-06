@@ -28,7 +28,7 @@
 			width: 100%;
 		}
 
-		.middle {
+		#input-div {
 			position: relative;
 			margin: 2em 4em;
 		}
@@ -55,10 +55,9 @@
 <main>
 <div>
 	<img src="yt-captions.png">
-	<form class="middle" action="/v" method="GET">{{--// TODO Should ultimately send to /, not /v. --}}
-		<label for="v">Video:</label>
-		<input type="text" id="v" name="v">
-	</form>
+	<div id="input-div">
+		<p>Video: {{ id }}</p>
+	</div>
 </div>
 </main>
 
