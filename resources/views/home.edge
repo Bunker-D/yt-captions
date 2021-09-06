@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Get Youtube Captions</title>
+	<link href="https://fonts.googleapis.com/css?family=Poppins:400,500&display=swap" rel="stylesheet">
+	@include('partials/common-style')
+	<style>
+		/* Page-specific */
+		main {
+			max-width: 680px;
+			margin: auto;
+			height: 100vh;
+			padding: 0 30px;
+			align-items: center;
+			display: flex;
+			justify-content: center;
+		}
+
+		img {
+			width: 50%;
+			max-width: 250px;
+			display: block;
+			margin: 0 auto 50px auto;
+		}
+
+		main > div {
+			width: 100%;
+		}
+
+		#input-div {
+			position: relative;
+			margin: 2em 4em;
+		}
+
+		input {
+			width: calc( 100% - 1.8em - 3px );
+			border: 1.5px solid #333;
+			border-radius: 0.4em;
+			padding: 3px 0.9em;
+			font-size: inherit;
+			color: #222;
+		}
+		input:focus { outline: none; }
+
+		label {
+			position: absolute;
+			right: 100%;
+			padding: 0 0.9em;
+		}
+	</style>
+</head>
+<body>
+
+<main>
+<div>
+	<img src="yt-captions.png">
+	<div id="input-div">
+		<label for="videoid">Video:</label>
+		<input type="text" id="videoid" name="videoid">
+	</div>
+</div>
+</main>
+
+</body>
+</html>
