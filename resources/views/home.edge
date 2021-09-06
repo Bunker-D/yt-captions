@@ -46,7 +46,7 @@
 		label {
 			position: absolute;
 			right: 100%;
-			padding: 0 0.9em;
+			padding: 2px 0.9em 0 0;
 		}
 	</style>
 </head>
@@ -55,7 +55,7 @@
 <main>
 <div>
 	<img src="yt-captions.png">
-	<form class="middle" action="/prompt" method="GET">{{--// TODO Should ultimately send to /, not /v. --}}
+	<form class="middle" action="/prompt" method="GET">
 		<label for="v">Video:</label>
 		<input type="text" id="v" name="v">
 	</form>

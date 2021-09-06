@@ -2,26 +2,27 @@
 |--------------------------------------------------------------------------
 | Routes
 |--------------------------------------------------------------------------
-|
-| This file is dedicated for defining HTTP routes. A single file is enough
-| for majority of projects, however you can define routes in different
-| files and just make sure to import them inside this file. For example
-|
-| Define routes in following two files
-| ├── start/routes/cart.ts
-| ├── start/routes/customer.ts
-|
-| and then import them inside `start/routes.ts` as follows
-|
-| import './routes/cart'
-| import './routes/customer''
-|
 */
 
 import Route from '@ioc:Adonis/Core/Route';
 
+// Home page
 Route.get( '/', async ( { view } ) => view.render( 'home' ) );
 
-Route.get( '/prompt', ( { request, response } ) => response.redirect( request.input( 'v' ) ?? '' ) );
+// Redirect the request from the home page search bar
+Route.get( '/prompt', ( { request, response } ) => response.redirect( '/' + request.input( 'v' ) ?? '' ) );
 
+// Prompt for a video
 Route.get( '/:id', 'CaptionsController.fetchVideo' );
+
+// Youtube url in the url
+Route.get( '/http:/*', 'CaptionsController.urlParse' );
+Route.get( '/https:/*', 'CaptionsController.urlParse' );
+Route.get( '/youtube.com/*', 'CaptionsController.urlParse' );
+Route.get( '/www.youtube.com/*', 'CaptionsController.urlParse' );
+
+// Prompt for a video + language // TODO
+Route.get( '/:id/:lang', ( { response, params } ) => response.send( `video id: ${ params.id }\nlang:     ${ params.lang }` ) );
+
+// Unrecognized request
+Route.get( '/*', ( { response } ) => response.status( 400 ).send( 'Invalid' ) );
