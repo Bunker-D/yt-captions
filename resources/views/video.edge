@@ -55,8 +55,15 @@
 <main>
 <div>
 	<img src="yt-captions.png">
-	<div id="input-div">
-		<p>Video: {{ id }}</p>
+	<div>
+		<p>id: {{ id }}</p>
+		<h2>{{ title }}</h2>
+		<h3>{{ channel }}, {{ date }}</h3>
+		<p>Available captions:&nbsp;&nbsp;&nbsp;
+			@each( ( url, lang ) in captions )
+				<a href="{{ url }}">[ {{ lang }} ]</a>
+			@endeach
+		</p>
 	</div>
 </div>
 </main>

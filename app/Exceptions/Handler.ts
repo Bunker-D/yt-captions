@@ -13,17 +13,18 @@
 |
 */
 
-import Logger from '@ioc:Adonis/Core/Logger'
-import HttpExceptionHandler from '@ioc:Adonis/Core/HttpExceptionHandler'
+import Logger from '@ioc:Adonis/Core/Logger';
+import HttpExceptionHandler from '@ioc:Adonis/Core/HttpExceptionHandler';
 
 export default class ExceptionHandler extends HttpExceptionHandler {
-  protected statusPages = {
-    '403': 'errors/unauthorized',
-    '404': 'errors/not-found',
-    '500..599': 'errors/server-error',
-  }
+	protected statusPages = {
+		//TODO  400 for invalid prompt format (not a youtube video), as an alternative version of the home page
+		'403': 'errors/unauthorized', //TODO  Clear
+		'404': 'errors/not-found', //TODO  Personalize, as an alternative version of the home page
+		'500..599': 'errors/server-error', //TODO
+	}
 
-  constructor () {
-    super(Logger)
-  }
+	constructor() {
+		super( Logger );
+	}
 }
