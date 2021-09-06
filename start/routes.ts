@@ -22,4 +22,6 @@ import Route from '@ioc:Adonis/Core/Route';
 
 Route.get( '/', async ( { view } ) => view.render( 'home' ) );
 
-Route.get( '/*', 'CaptionsController.fetchVideo' );
+Route.get( '/prompt', ( { request, response } ) => response.redirect( request.input( 'v' ) ?? '' ) );
+
+Route.get( '/:id', 'CaptionsController.fetchVideo' );

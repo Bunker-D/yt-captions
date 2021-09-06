@@ -4,10 +4,14 @@
 
 export default class CaptionsController {
 
-	public async fetchVideo( { request, view } ) {
-		let id = request.url();
-		id = '[ ' + id + ' ]';
-		return view.render( 'video', { id } );
+	public async fetchVideo( { request, params, view } ) {
+		console.log( '--' );
+		console.log( request.url() );
+		console.log( request.all() );
+		console.log( request.input( 'v' ) );
+		console.log( request.input( 'foo' ) );
+		console.log( params );
+		return view.render( 'video', { id: params.id } );
 	}
 
 }
