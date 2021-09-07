@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Get Youtube Captions</title>
+	<link href="https://fonts.googleapis.com/css?family=Poppins:400,500&display=swap" rel="stylesheet">
+	@include('partials/common-style')
+	<style>
+		main {
+			max-width: 850px;
+			width: 80%;
+			margin: auto;
+		}
+
+		.head {
+			width: 100%;
+			display: flex;
+			padding: 2em 0 ;
+		}
+		img {
+			width: 20%;
+			max-width: 4.5em;
+			margin: .4em 1em 0 0;
+			height: fit-content;
+		}
+		.video-descriptor {
+			flex-grow: 100
+		}
+
+		blockquote { margin: 2em 0; }
+		blockquote:focus { outline: none; }
+
+		.foot {
+			display: block;
+			width: 100%;
+			height: 4em;
+    		border-top: 2px solid #dc0000;
+		}
+	</style>
+</head>
+<body>
+
+<main>
+	<div class="head">
+		<img src="yt-captions.png">
+		@!videoDescriptor( { id: id, title: title, channel: channel, date: date } )
+	</div>
+	<blockquote contenteditable="true">
+		<p>
+			@each( bit in text )
+				<span data-time="{{ bit[ 0 ] }}">{{ bit[ 1 ] }}</span>
+			@endeach
+		</p>
+	</blockquote>
+	<div class="foot"></div>
+</main>
+
+</body>
+</html>

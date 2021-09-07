@@ -6,6 +6,9 @@
 
 import Route from '@ioc:Adonis/Core/Route';
 
+//TODO TEST PAGE
+Route.get( '/test', 'CaptionsController.test' );
+
 // Home page
 Route.get( '/', async ( { view } ) => view.render( 'home' ) );
 
