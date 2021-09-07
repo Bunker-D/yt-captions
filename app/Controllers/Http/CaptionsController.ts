@@ -1,5 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { ResponseContract } from '@ioc:Adonis/Core/Response';
 import { default as youtubedl, YtResponse } from 'youtube-dl-exec';
+// import { default as fetch } from 'node-fetch';
 
 export default class CaptionsController {
 
@@ -12,65 +14,87 @@ export default class CaptionsController {
 		response.redirect( '/' + request.input( 'v' ) );
 	}
 
-	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void|string> {
-		if ( ! params.id.match( /^[a-zA-Z0-9\-_]{11}$/ ) ) {
-			return response.status( 400 ).send( 'Invalid' );
-		}
-		const url: string = 'https://www.youtube.com/watch?v=' + params.id;
-		let video: YtResponseExtended;
+	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void | string> {
 		try {
-			video = await youtubedl( url, {
-				dumpSingleJson: true,
-				noWarnings: true,
-				noCallHome: true,
-				noCheckCertificate: true,
-				preferFreeFormats: true,
-				youtubeSkipDashManifest: true,
-				referer: url,
-			} );
+			const data = await _fetchVideo( params.id );
+			return view.render( 'video', data );
 		} catch ( e ) {
-			if ( e.stderr === 'ERROR: Video unavailable' ) {
-				return response.status( 404 ).send( 'Video not found' );
-			}
-			return response.status( 500 ).send( 'Something went wrong' );
-			// Possible source of error:  MSVCR100.dll missing
-			// Requires Microsoft Visual C++ 2010 Service Pack 1 Redistributable 32 bits (x86) (not 64, even on 64-bit Windows)
+			FetchError.raise( response, e );
 		}
-		/*TODO
-			Based on archived subget.js:
-				Rebuild the youtube url
-				Youtube-dl the data. If fail: 404.
-				Keep what we want
-		*/
-		const data: ytData = {
-			id: params.id,
-			url: url,
-			title: video.title,
-			channel: video.channel,
-			date: dateReformat( video.upload_date ),
-			captions: {},
-		};
-		let urls = video.automatic_captions ?? {}; // List of automatic caption. Find the url for 'vtt' in the first one.
-		for ( const { ext, url } of urls[ Object.keys( urls )[ 0 ] ] ) {
+	}
+
+}
+
+async function _fetchVideo( id: string ): Promise<ytData> {
+	// Check the validity of the id format
+	if ( ! id.match( /^[a-zA-Z0-9\-_]{11}$/ ) ) throw new FetchError( 400, 'Invalid' );
+	// Fetch the data from Youtube
+	const url: string = 'https://www.youtube.com/watch?v=' + id;
+	let video: YtResponseExtended;
+	try {
+		video = await youtubedl( url, {
+			dumpSingleJson: true,
+			noWarnings: true,
+			noCallHome: true,
+			noCheckCertificate: true,
+			preferFreeFormats: true,
+			youtubeSkipDashManifest: true,
+			referer: url,
+		} );
+	} catch ( e ) {
+		if ( e.stderr === 'ERROR: Video unavailable' ) throw new FetchError( 404, 'Video not found' );
+		// This check mught by itself raise another error that will be handled anyway.
+		throw '?';
+		// Possible source of error:  MSVCR100.dll missing
+		// Requires Microsoft Visual C++ 2010 Service Pack 1 Redistributable 32 bits (x86)
+	}
+	// RTead the relevant data
+	const data: ytData = {
+		id: id,
+		url: url,
+		title: video.title,
+		channel: video.channel,
+		date: dateReformat( video.upload_date ),
+		captions: {},
+	};
+	let urls = video.automatic_captions ?? {}; // List of automatic caption. Find the url for 'vtt' in the first one.
+	for ( const { ext, url } of urls[ Object.keys( urls )[ 0 ] ] ) {
+		if ( ext === 'vtt' ) {
+			// Remove tlang field from the url to get to default (original) language
+			// Note: An alternative solution would be to identify the video language through the lang= field in those urls.
+			data.captions.auto = url.replace( /(?<=\/|&)tlang=[^&]+(&|$)/, '' );
+			break;
+		}
+	}
+	urls = video.subtitles ?? {};
+	for ( const lang in urls ) {
+		for ( const { ext, url } of urls[ lang ] ) {
 			if ( ext === 'vtt' ) {
-				// Remove tlang field from the url to get to default (original) language
-				// Note: An alternative solution would be to identify the video language through the lang= field in those urls.
-				data.captions.auto = url.replace( /(?<=\/|&)tlang=[^&]+(&|$)/, '' );
+				data.captions[ lang ] = url;
 				break;
 			}
 		}
-		urls = video.subtitles ?? {};
-		for ( const lang in urls ) {
-			for ( const { ext, url } of urls[ lang ] ) {
-				if ( ext === 'vtt' ) {
-					data.captions[ lang ] = url;
-					break;
-				}
-			}
-		}
-		return view.render( 'video', data );
 	}
+	return data;
+}
 
+/**
+ * Class FetchError is used to handle errors in shared fetching functions.
+ * Its static raise function also defines the default behavior for unrecognized issues.
+ */
+class FetchError {
+	status: number;
+	message: string;
+	constructor( status: number, message?: string ) {
+		this.status = status;
+		this.message = message ?? '';
+	}
+	public static raise( response: ResponseContract, error?: unknown ) {
+		if ( error instanceof FetchError ) {
+			return response.status( error.status ).send( error.message );
+		}
+		return response.status( 500 ).send( 'Something went wrong' );
+	}
 }
 
 /**

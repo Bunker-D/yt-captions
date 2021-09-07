@@ -33,6 +33,7 @@
 		<h3 class="date">{{ date }}</h3>
 		<h3>{{ channel }},&nbsp;</h3>
 		<p>Available captions:&nbsp;&nbsp;&nbsp;</p>
+		{{-- //TODO  No captions exception --}}
 		<div class="spreader">
 			@each( ( url, lang ) in captions )
 				<form action="/{{ id }}/{{ ( lang === 'auto' ) ? '0' : lang }}" method="POST">
