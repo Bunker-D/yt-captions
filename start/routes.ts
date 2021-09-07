@@ -22,7 +22,14 @@ Route.get( '/youtube.com/*', 'CaptionsController.urlParse' );
 Route.get( '/www.youtube.com/*', 'CaptionsController.urlParse' );
 
 // Prompt for a video + language // TODO
-Route.get( '/:id/:lang', ( { response, params } ) => response.send( `video id: ${ params.id }\nlang:     ${ params.lang }` ) );
+Route.get( '/:id/:lang', ( { response, params } ) => response.send( `GET\nvideo id: ${ params.id }\nlang:     ${ params.lang }` ) );
+Route.post( '/:id/:lang', ( { request, response, params } ) => {
+	console.log( 'BODY:' );
+	console.log( request.body() );
+	console.log( 'PARAMS:' );
+	console.log( params );
+	response.send( `POST\nvideo id: ${ params.id }\nlang:     ${ params.lang }` );
+} );
 
 // Unrecognized request
 Route.get( '/*', ( { response } ) => response.status( 400 ).send( 'Invalid' ) );

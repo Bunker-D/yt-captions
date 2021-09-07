@@ -6,47 +6,20 @@
 	<title>Get Youtube Captions</title>
 	<link href="https://fonts.googleapis.com/css?family=Poppins:400,500&display=swap" rel="stylesheet">
 	@include('partials/common-style')
+	@include('partials/search-style')
 	<style>
-		main {
-			max-width: 680px;
-			margin: auto;
-			height: 100vh;
-			padding: 0 30px;
-			align-items: center;
+		h2 { border-top: 4px solid #dc0000; }
+		.date { float: right; }
+		p { margin: 2em 0 .7em 0; }
+
+		.spreader {
 			display: flex;
-			justify-content: center;
+			justify-content: space-around;
+			flex-wrap: wrap;
 		}
-
-		img {
-			width: 50%;
-			max-width: 250px;
-			display: block;
-			margin: 0 auto 50px auto;
-		}
-
-		main > div {
-			width: 100%;
-		}
-
-		#input-div {
-			position: relative;
-			margin: 2em 4em;
-		}
-
 		input {
-			width: calc( 100% - 1.8em - 3px );
-			border: 1.5px solid #333;
-			border-radius: 0.4em;
-			padding: 3px 0.9em;
-			font-size: inherit;
-			color: #222;
-		}
-		input:focus { outline: none; }
-
-		label {
-			position: absolute;
-			right: 100%;
-			padding: 0 0.9em;
+			width: 5em;
+			margin: .5em .7em;
 		}
 	</style>
 </head>
@@ -56,14 +29,18 @@
 <div>
 	<img src="yt-captions.png">
 	<div>
-		<p>id: {{ id }}</p>
 		<h2>{{ title }}</h2>
-		<h3>{{ channel }}, {{ date }}</h3>
-		<p>Available captions:&nbsp;&nbsp;&nbsp;
+		<h3 class="date">{{ date }}</h3>
+		<h3>{{ channel }},&nbsp;</h3>
+		<p>Available captions:&nbsp;&nbsp;&nbsp;</p>
+		<div class="spreader">
 			@each( ( url, lang ) in captions )
-				<a href="{{ url }}">[ {{ lang }} ]</a>
+				<form action="/{{ id }}/{{ ( lang === 'auto' ) ? '0' : lang }}" method="POST">
+					<input type="hidden" id="captionsurl" name="captionsurl" value="{{ url }}" >
+					<input type="submit" value="{{ lang }}">
+				</form>
 			@endeach
-		</p>
+		</div>
 	</div>
 </div>
 </main>
