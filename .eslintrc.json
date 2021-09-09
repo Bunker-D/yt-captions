@@ -10,7 +10,7 @@
 	],
 	"extends": [
 		"eslint:recommended",
-    "plugin:@typescript-eslint/eslint-recommended",
+    	"plugin:@typescript-eslint/eslint-recommended",
 		"plugin:@typescript-eslint/recommended"
 	],
 	"rules": {
@@ -93,6 +93,7 @@
 		"template-curly-spacing": "off",
 		"valid-jsdoc": ["error", { "requireReturn": false }],
 		"valid-typeof": "error",
-		"yoda": "off"
+		"yoda": "off",
+		"@typescript-eslint/no-inferrable-types": [ "error", "ignore-params", "ignore-properties" ]
 	}
 }

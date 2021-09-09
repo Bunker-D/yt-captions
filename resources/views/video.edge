@@ -43,11 +43,7 @@
 					<input type="hidden" id="channel" name="channel" value="{{ channel }}" >
 					<input type="hidden" id="date" name="date" value="{{ date }}" >
 					<input type="hidden" id="captions" name="captions" value="{{ Object.keys( captions ).map( ( k ) => k + '@' + captions[ k ] ).join( '|' ); }}" >
-					<input type="hidden" id="captionsurl" name="captionsurl" value="{{ url }}" > {{-- //TODO remove }}
-					{{-- //TODO
-					>	Since I would like to keep all data at /:id/:lang level, it is irrelevant to isolate the captions url rather than the selected lang.
-					>	Building the captions list as an Object seems to be overkill and counter productive. A [string,string][] might be better.
-					--}}
+					{{-- caption = "<lang>@<url>|<lang>@<url>|<lang>@<url>…" --}}
 					<input type="submit" value="{{ lang }}">
 				</form>
 			@endeach
