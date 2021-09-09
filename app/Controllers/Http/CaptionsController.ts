@@ -167,22 +167,26 @@ async function _fetchCaptions( url: string, msResolution: boolean = true ): Prom
 				text[ i ] = [ time,
 					' ' +
 					line.replace( regTimedWord, ( _, t, w ) => { // Read each timed word, leaving the first wors
-						text.push( [ t, w ] );
+						if ( w ) text.push( [ t, w ] );
 						return '';
 					} ),
 				]; // Store the remaining first word
 				last = line.replace( regTimedWord, '$2' ); // Store what was just read
-			} else if ( line !== last ) text.push( [ time, line ] ); // It is a line without timing, which might be a double.
+			} else if ( line !== last ) text.push( [ time, line ] ); // It is a line without timing, which might be a double
 		}
 	}
-	//TODO should move the space at the begging of texts to the end of previous texts.
-	// Strip the timings from excessive front characters
-	if ( ! text.length ) return text;
+	if ( ! text.length ) return []; // No text, stop there
+	text[ 0 ][ 1 ] = text[ 0 ][ 1 ].substr( 1 ); // Remove the spaces added in front of the first line
+	// Strip the timings from excessive front characters + move the spaces: always after words
 	const zeroes = text[ text.length - 1 ][ 0 ].match( /^0*:?0?/ );
 	const s = ( zeroes ) ? zeroes[ 0 ].length : 0;
 	const n = ( msResolution ) ? undefined : 8 - s;
-	for ( let i = 0; i < text.length; i++ ) {
+	let space = false;
+	for ( let i = text.length - 1; i >= 0; i-- ) {
 		text[ i ][ 0 ] = text[ i ][ 0 ].substr( s, n );
+		if ( space ) text[ i ][ 1 ] += " ";
+		space = text[ i ][ 1 ][ 0 ] === " ";
+		if ( space ) text[ i ][ 1 ] = text[ i ][ 1 ].substr( 1 );
 	}
 	return text;
 }
