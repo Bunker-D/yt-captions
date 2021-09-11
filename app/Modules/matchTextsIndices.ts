@@ -1,28 +1,3 @@
-
-export default function test(): string {
-	const script = "— Ça c'est un texte. Evidemment, ponctuation. (?) Superbes petits oiseaux à l'horizon. Et autres histoires.";
-	const autocap = "ça c'est un test évidemment ponctuation zzzzzzzzzzzzz superbe petit oiseau allo rions et autres histoires";
-	const writeTics = ( tics: number[] ) => {
-		let a = ' '.repeat( Math.max( 0, ...tics ) );
-		let b = a;
-		let k = 'a'.charCodeAt( 0 );
-		for ( const t of tics ) {
-			if ( t >= 0 ) {
-				a = a.substr( 0, t ) + '^' + a.substr( t + 1 );
-				b = b.substr( 0, t ) + String.fromCharCode( k ) + b.substr( t + 1 );
-			}
-			k++;
-		}
-		return '\n' + a + '\n' + b;
-	};
-	const tics = [ 0 ];
-	for ( const w of autocap.split( ' ' ) ) tics.push( tics[ tics.length - 1 ] + w.length + 1 );
-	const newTics = matchIndices( autocap, script, tics );
-	console.log( tics );
-	console.log( newTics );
-	return autocap + writeTics( tics ) + '\n\n' + script + writeTics( newTics );
-}
-
 /**
  * Converts the indices for a text into those for a similar one.
  * @param {string} fromText Text for which the original indices are
@@ -30,7 +5,7 @@ export default function test(): string {
  * @param {number[]} indices Locations in fromText (indices) to be located in toText
  * @returns {number[]} Corresponding locations (indices) in fromText (-1 when no match)
  */
-function matchIndices( fromText: string, toText: string, indices: number[] ): number[] {
+export default function matchIndices( fromText: string, toText: string, indices: number[] ): number[] {
 	const res: number[] = [];
 	const [ fromCurated, a ] = curateStr( fromText ); // Curation: remove capital letters, accents, punctuation, excess spaces…
 	const [ toCurated, b ] = curateStr( toText );
@@ -200,3 +175,30 @@ function longestMatch( a: string, b: string ): [number,number,number] {
 		iMap
 	];
 }
+
+
+/*
+export default function test(): string {
+	const script = "— Ça c'est un texte. Evidemment, ponctuation. (?) Superbes petits oiseaux à l'horizon. Et autres histoires.";
+	const autocap = "ça c'est un test évidemment ponctuation zzzzzzzzzzzzz superbe petit oiseau allo rions et autres histoires";
+	const writeTics = ( tics: number[] ) => {
+		let a = ' '.repeat( Math.max( 0, ...tics ) );
+		let b = a;
+		let k = 'a'.charCodeAt( 0 );
+		for ( const t of tics ) {
+			if ( t >= 0 ) {
+				a = a.substr( 0, t ) + '^' + a.substr( t + 1 );
+				b = b.substr( 0, t ) + String.fromCharCode( k ) + b.substr( t + 1 );
+			}
+			k++;
+		}
+		return '\n' + a + '\n' + b;
+	};
+	const tics = [ 0 ];
+	for ( const w of autocap.split( ' ' ) ) tics.push( tics[ tics.length - 1 ] + w.length + 1 );
+	const newTics = matchIndices( autocap, script, tics );
+	console.log( tics );
+	console.log( newTics );
+	return autocap + writeTics( tics ) + '\n\n' + script + writeTics( newTics );
+}
+*/

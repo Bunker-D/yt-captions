@@ -2,6 +2,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { ResponseContract } from '@ioc:Adonis/Core/Response';
 import { default as youtubedl, YtResponse } from 'youtube-dl-exec';
 import { default as fetch } from 'node-fetch';
+// import matchTest from 'App/Modules/matchTextsIndices';
 
 export default class CaptionsController {
 
@@ -27,7 +28,8 @@ export default class CaptionsController {
 		response.redirect( '/' + request.input( 'v' ) );
 	}
 
-	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void|string> {
+	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void | string> {
+		//TODO Should also offer the possibility to merge auto timing and manual subtitles when possible
 		try {
 			const data = await _fetchVideo( params.id );
 			return view.render( 'video', data );
@@ -109,13 +111,18 @@ async function _fetchVideo( id: string ): Promise<ytData> {
 		captions: {},
 	};
 	let urls = video.automatic_captions ?? {}; // List of automatic caption. Find the url for 'vtt' in the first one.
-	for ( const { ext, url } of urls[ Object.keys( urls )[ 0 ] ] ) {
-		if ( ext === 'vtt' ) {
-			// Remove tlang field from the url to get to default (original) language
-			// Note: An alternative solution would be to identify the video language through the lang= field in those urls.
-			data.captions.auto = url.replace( /(?<=\/|&)tlang=[^&]+(&|$)/, '' );
-			break;
+	for ( const lang in urls ) {
+		for ( const { ext, url } of urls[ lang ] ) {
+			if ( ext === 'vtt' ) {
+				// Remove the 'tlang' field from the url to get to default (original) language
+				// Read 'lang' field to identify the original language
+				if ( ! data.captions.auto ) data.captions.auto = url.replace( /(?<=[?&])tlang=[^&]+(&|$)/, '' );
+				const m = url.match( /(?<=[?&]lang=)[^&]+(?=&|$)/ );
+				if ( m ) data.lang = m[ 0 ];
+				break;
+			}
 		}
+		if ( data.lang ) break;
 	}
 	urls = video.subtitles ?? {};
 	for ( const lang in urls ) {
@@ -228,6 +235,7 @@ interface ytData {
 	channel: string,
 	date: string,
 	captions: { [ key: string ]: string; },
+	lang?: string,
 }
 
 /**
@@ -249,22 +257,6 @@ function dateReformat( date: string ): string {
 /*TODO
 	Settings: Toggle ms accuracy for paragraph time stamps.
 	Export button: Export to .srt
-*/
-/*TODO
-	Apply the timings from an auto-generated captions `captions` ([string,string][])
-	to a proper script `script` (string):
-		Using: https://thiscouldbebetter.wordpress.com/2013/02/02/finding-differences-between-two-text-files-in-javascript/
-		Two options:
-			============================================================================================
-			1- Convert `captions` into a string, but create another `timings` list of [<character index>, <timing>] to keep the timing info.
-			2- Compute the difference between strings `captions` and `script`.
-			3- Use that to establish the conversion from `script` character index to `captions` character index.
-			4- Use that to set the timings in `script` based on `timings`.
-			============================================================================================
-			1- Convert `captions` into a string including the time codes (e.g. "{{00:00.000}}This {{00:00.120}}is {{00:00.258}}my {{00:00:350}}video.").
-			2- Compute the difference between `captions` and `script`.
-			3- Use that to establish where the timings goes, using a regex on the "deleted" (captions side) bits.
-			============================================================================================
 */
 /*TODO
 	Save and Load capabilities.
