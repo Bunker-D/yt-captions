@@ -4,9 +4,12 @@
 |--------------------------------------------------------------------------
 */
 
+// import { Response } from '@adonisjs/http-server/build/standalone';
 import Route from '@ioc:Adonis/Core/Route';
 
-//TODO TEST PAGE
+//TODO TEST RETLATED
+import matchTest from 'App/Modules/matchStr';
+Route.get( '/match', ( { response } ) => response.status( 200 ).send( matchTest() ) );
 Route.get( '/test', 'CaptionsController.test' );
 
 // Home page

@@ -250,7 +250,6 @@ function dateReformat( date: string ): string {
 	Settings: Toggle ms accuracy for paragraph time stamps.
 	Export button: Export to .srt
 */
-
 /*TODO
 	Apply the timings from an auto-generated captions `captions` ([string,string][])
 	to a proper script `script` (string):
@@ -266,4 +265,7 @@ function dateReformat( date: string ): string {
 			2- Compute the difference between `captions` and `script`.
 			3- Use that to establish where the timings goes, using a regex on the "deleted" (captions side) bits.
 			============================================================================================
-*/			
+*/
+/*TODO
+	Save and Load capabilities.
+*/
