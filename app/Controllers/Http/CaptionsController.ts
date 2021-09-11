@@ -2,7 +2,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { ResponseContract } from '@ioc:Adonis/Core/Response';
 import { default as youtubedl, YtResponse } from 'youtube-dl-exec';
 import { default as fetch } from 'node-fetch';
-// import matchTest from 'App/Modules/matchTextsIndices';
+import matchTextsIndices from 'App/Modules/matchTextsIndices';
 
 export default class CaptionsController {
 
@@ -31,8 +31,9 @@ export default class CaptionsController {
 	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void | string> {
 		//TODO Should also offer the possibility to merge auto timing and manual subtitles when possible
 		try {
-			const data = await _fetchVideo( params.id );
+			const data: ytData = await _fetchVideo( params.id );
 			return view.render( 'video', data );
+			// return view.render( 'video', data );
 		} catch ( e ) {
 			return FetchError.raise( response, e );
 		}
@@ -40,16 +41,18 @@ export default class CaptionsController {
 
 	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
 		const body = request.body();
-		if ( !body.captions ) {
+		if ( ! body.captions ) {
 			/*TODO  url lacking
 				→ Should fetch video data to try to find the proper url.
 				→ If track doesn't exist, redirect to /params.id, with post to not repeat the data fetch.
+				→ /!\ auto + manual 
 			*/
 			return response.status( 400 ).send( 'TO BE DONE:  here without captions file url' ); //TODO not that
 		}
 		// Identify the proper url (urls provided as "<lang>@<url>|<lang>@<url>|<lang>@<url>|…")
 		let url: string = params.lang;
 		if ( url === "0" ) url = "auto";
+		if ( url === "00" ) url = "mix";
 		try {
 			url = (
 				body.captions.match( new RegExp( `(?<=(^|\\|)${ url }@)(.*?)(?=(\\||$))` ) ) || // e.g. looked for "en", found "en"
@@ -60,7 +63,58 @@ export default class CaptionsController {
 			//TODO  Should redirect to video page with error message.
 		}
 		// Fetch the captions
-		const captions = await _fetchCaptions( url );
+		const urls: string[] = url.split( '@' );
+		let captions: [ String, String ][];
+		if ( urls.length > 1 ) { // Two captions files to combine (time and text)
+			const auto = await _fetchCaptions( urls[ 0 ] ); // First track: automatic captions
+			let text: [ string, string ][] | string = await _fetchCaptions( urls[ 1 ] ); // Second track: manual captions
+			text = text.map( ( x ) => x[ 1 ] ).join( '' ); // Keep just the text from manual captions
+			console.log( urls );
+			console.log( '-----' );
+			console.log( auto.map( ( x ) => x[ 1 ] ).join( '' ) );
+			console.log( '-----' );
+			console.log( text );
+			let indices: number[] = []; // Build the indices of where timings apply in first track (automatic captions)
+			let i = 0;
+			for ( const x of auto ) {
+				indices.push( i );
+				i += x[ 1 ].length;
+			}
+			indices = matchTextsIndices(  // convert those indices to match the second track (manual captions)
+				auto.map( ( x ) => x[ 1 ] ).join( '' ),
+				text,
+				indices
+			);
+			captions = [];
+			i = 0;
+			let t!: string;
+			let s!: number;
+			for ( ; i < indices.length; i++ ) {
+				if ( indices[ i ] >= 0 ) {
+					t = auto[ i ][ 0 ];
+					s = indices[ i ];
+					console.log( s );
+					if ( s > 0 ) {
+						captions.push( [
+							auto[ 0 ][ 0 ].replace( /[0-9]/g, '0' ), // If not times, start put at 00:00.000
+							text.substring( 0, s )
+						] );
+					}
+					break;
+				}
+			}
+			for ( ; i < indices.length; i++ ) {
+				if ( indices[ i ] >= 0 ) {
+					captions.push( [ t, text.substring( s, indices[ i ] ) ] );
+					t = auto[ i ][ 0 ];
+					s = indices[ i ];
+				}
+			}
+			if ( t ) captions.push( [ t, text.substring( s, indices[ i ] ) ] );
+		} else { // One single captions file
+			captions = await _fetchCaptions( url );
+		}
+
 		// Build page
 		return view.render( 'captions', {
 			title: body.title,
@@ -110,6 +164,7 @@ async function _fetchVideo( id: string ): Promise<ytData> {
 		date: dateReformat( video.upload_date ),
 		captions: {},
 	};
+	// In the automatic captions if any, find a valid url and the language
 	let urls = video.automatic_captions ?? {}; // List of automatic caption. Find the url for 'vtt' in the first one.
 	for ( const lang in urls ) {
 		for ( const { ext, url } of urls[ lang ] ) {
@@ -124,12 +179,35 @@ async function _fetchVideo( id: string ): Promise<ytData> {
 		}
 		if ( data.lang ) break;
 	}
+	// List the manual captions if any
 	urls = video.subtitles ?? {};
 	for ( const lang in urls ) {
 		for ( const { ext, url } of urls[ lang ] ) {
 			if ( ext === 'vtt' ) {
 				data.captions[ lang ] = url;
 				break;
+			}
+		}
+	}
+	// If there are both automatic and manual captions, check if combining is possible, then add that as a possibility
+	if ( data.lang && data.captions.auto ) {
+		let original = data.captions[ data.lang ];
+		if ( ! original ) {
+			const s = data.lang + '-';
+			for ( const lang in data.captions ) {
+				if ( lang.startsWith( s ) ) {
+					original = data.captions[ lang ];
+					break;
+				}
+			}
+		}
+		if ( original ) {
+			const auto = data.captions.auto;
+			delete data.captions.auto;
+			data.captions = {
+				auto: auto,
+				mix: auto + '@' + original,
+				...data.captions
 			}
 		}
 	}
@@ -140,10 +218,11 @@ async function _fetchVideo( id: string ): Promise<ytData> {
  * Fetch the vtt subtitles at a given URL, as an array of timings and texts.
  * @param {string} url URL for the subtitles
  * @param {boolean} [msResolution=false] Whether the timings are accurate to the milisecond (false (default)) or to the second (true)
- * @returns {[string,string][]} List of timed texts, as a list of [<time>, <text>] (where <time> is in text format).
+ * @returns {[string,string][]} List of timed texts, as a list of [*time*, *text*] (where *time* is in text format).
  * @async
  */
-async function _fetchCaptions( url: string, msResolution: boolean = true ): Promise<[string, string][]> {
+async function _fetchCaptions( url: string, msResolution: boolean = true ): Promise<[ string, string ][]> {
+	//TODO Missing first character and spaces between lines for non-auto scripts
 	// Fetch the captions
 	const resp = await fetch( url );
 	//TODO resp.status = 404 when not found
