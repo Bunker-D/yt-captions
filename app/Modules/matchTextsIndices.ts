@@ -65,7 +65,8 @@ export default function matchIndices( fromText: string, toText: string, indices:
  * @param {string} b String to compare
  * @returns {[number,number,number][]} List of [ start index in a, start index in b, length of the match ]
  */
- function getMatches( a: string, b: string ): [number,number,number][] {
+function getMatches( a: string, b: string ): [ number, number, number ][] {
+	//TODO  Very slow for long texts. Timiting the offsets tried in getMatches could be a good idea
 	let [ i, j, n ] = longestMatch( a, b );
 	if ( n ) {
 		const left = ( i && j ) ? getMatches( a.substr( 0, i ), b.substr( 0, j ) ) : [];
