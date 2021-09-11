@@ -32,11 +32,9 @@ export default class CaptionsController {
 	}
 
 	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void | string> {
-		//TODO Should also offer the possibility to merge auto timing and manual subtitles when possible
 		try {
 			const data: ytData = await ytFetchVideo( params.id );
 			return view.render( 'video', data );
-			// return view.render( 'video', data );
 		} catch ( e ) {
 			return FetchError.raise( response, e );
 		}
@@ -72,11 +70,11 @@ export default class CaptionsController {
 			const auto = await ytFetchCaptions( urls[ 0 ] ); // First track: automatic captions
 			let text: [ string, string ][] | string = await ytFetchCaptions( urls[ 1 ] ); // Second track: manual captions
 			text = text.map( ( x ) => x[ 1 ] ).join( '' ); // Keep just the text from manual captions
-			console.log( urls );
-			console.log( '-----' );
-			console.log( auto.map( ( x ) => x[ 1 ] ).join( '' ) );
-			console.log( '-----' );
-			console.log( text );
+			console.log( urls ); // TODO DELETE
+			console.log( '-----' ); // TODO DELETE
+			console.log( auto.map( ( x ) => x[ 1 ] ).join( '' ) ); // TODO DELETE
+			console.log( '-----' ); // TODO DELETE
+			console.log( text ); // TODO DELETE
 			let indices: number[] = []; // Build the indices of where timings apply in first track (automatic captions)
 			let i = 0;
 			for ( const x of auto ) {

@@ -20,9 +20,24 @@
 			flex-wrap: wrap;
 		}
 		input {
-			width: 5em;
+			min-width: 5em;
 			margin: .5em .7em;
+			background-color: #f5f5f5;
 			cursor: pointer;
+		}
+		.main input {
+			border: 2px solid;
+    		font-weight: bold;
+		}
+
+		.error {
+			color: #dc0000;
+			font-size: 1.7em;
+			font-weight: bold;
+			border: 5px solid;
+			width: fit-content;
+			margin: .5em auto;
+			padding: .2em 1em;
 		}
 	</style>
 </head>
@@ -34,21 +49,35 @@
 	<div>
 		@!videoDescriptor( { id: id, title: title, channel: channel, date: date } )
 		<p>Available captions:&nbsp;&nbsp;&nbsp;</p>
-		{{-- //TODO  No captions exception --}}
-		<div class="spreader">
-			@each( ( url, lang ) in captions )
-				<form action="/{{ id }}/{{ ( lang === 'auto' ) ? '0' : lang }}" method="POST">
-					<input type="hidden" id="id" name="id" value="{{ id }}" >
-					<input type="hidden" id="url" name="url" value="{{ url }}" >
-					<input type="hidden" id="title" name="title" value="{{ title }}" >
-					<input type="hidden" id="channel" name="channel" value="{{ channel }}" >
-					<input type="hidden" id="date" name="date" value="{{ date }}" >
-					<input type="hidden" id="captions" name="captions" value="{{ Object.keys( captions ).map( ( k ) => k + '@' + captions[ k ] ).join( '|' ); }}" >
-					{{-- caption = "<lang>@<url>|<lang>@<url>|<lang>@<url>…" --}}
-					<input type="submit" value="{{ lang }}">
-				</form>
-			@endeach
-		</div>
+		@if( Object.keys( captions ).length )
+			{{-- captionsStr = "<lang>@<url>|<lang>@<url>|<lang>@<url>…" --}}
+			@set( 'captionsStr', Object.keys( captions ).map( ( k ) => k + '@' + captions[ k ] ).join( '|' ) )
+			@set( 'newLine', ( 'mix' in captions ) ? Object.keys( captions )[ 2 ] : ( 'auto' in captions ) ? 'auto' : false)
+			<div
+				@if( newLine )
+					class="spreader main"
+				@else
+					class="spreader"
+				@endif
+			>
+				@each( ( url, lang ) in captions )
+					<form action="/{{ id }}/{{ ( lang === 'auto' ) ? '0' : ( lang === 'mix' ) ? '00' : lang }}" method="POST">
+						<input type="hidden" id="id" name="id" value="{{ id }}" >
+						<input type="hidden" id="url" name="url" value="{{ url }}" >
+						<input type="hidden" id="title" name="title" value="{{ title }}" >
+						<input type="hidden" id="channel" name="channel" value="{{ channel }}" >
+						<input type="hidden" id="date" name="date" value="{{ date }}" >
+						<input type="hidden" id="captions" name="captions" value="{{ captionsStr }}" >
+						<input type="submit" value="{{ ( lang === 'mix' ) ? ( 'auto + ' + Object.keys( captions )[ 2 ] ) : lang }}">
+					</form>
+					@if( lang === newLine )
+						</div><div class="spreader">
+					@endif
+				@endeach
+			</div>
+		@else
+			<div class="error">No captions available.</div>
+		@endif
 	</div>
 </div>
 </main>
