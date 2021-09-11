@@ -1,8 +1,88 @@
 
 export default function test(): string {
-	return 'Hello World';
+	const script = "— Ça c'est un texte. Evidemment, ponctuation. (?) Superbes petits oiseaux à l'horizon. Et autres histoires.";
+	const autocap = "ça c'est un test évidemment ponctuation zzzzzzzzzzzzz superbe petit oiseau allo rions et autres histoires";
+	const writeTics = ( tics: number[] ) => {
+		let a = ' '.repeat( Math.max( 0, ...tics ) );
+		let b = a;
+		let k = 'a'.charCodeAt( 0 );
+		for ( const t of tics ) {
+			if ( t >= 0 ) {
+				a = a.substr( 0, t ) + '^' + a.substr( t + 1 );
+				b = b.substr( 0, t ) + String.fromCharCode( k ) + b.substr( t + 1 );
+			}
+			k++;
+		}
+		return '\n' + a + '\n' + b;
+	};
+	const tics = [ 0 ];
+	for ( const w of autocap.split( ' ' ) ) tics.push( tics[ tics.length - 1 ] + w.length + 1 );
+	const newTics = matchIndices( autocap, script, tics );
+	console.log( tics );
+	console.log( newTics );
+	return autocap + writeTics( tics ) + '\n\n' + script + writeTics( newTics );
 }
 
+/**
+ * Converts the indices for a text into those for a similar one.
+ * @param {string} fromText Text for which the original indices are
+ * @param {string} toText Similar text in which the corresponding indices shall be identified
+ * @param {number[]} indices Locations in fromText (indices) to be located in toText
+ * @returns {number[]} Corresponding locations (indices) in fromText (-1 when no match)
+ */
+function matchIndices( fromText: string, toText: string, indices: number[] ): number[] {
+	const res: number[] = [];
+	const [ fromCurated, a ] = curateStr( fromText ); // Curation: remove capital letters, accents, punctuation, excess spaces…
+	const [ toCurated, b ] = curateStr( toText );
+	const ab = getMatches( fromCurated, toCurated );
+	if ( ! a.length ) a.push( [ 0, 0 ] )
+	if ( ! b.length ) b.push( [ 0, 0 ] )
+	let changeA = ( a.length ) ? a[ 0 ][ 1 ] : Infinity; // change<x>: next input index where the conversion rule described by <x> changes
+	let changeB = ( b.length ) ? b[ 0 ][ 0 ] : Infinity;
+	let changeAB = ( ab.length ) ? ab[ 0 ][ 0 ] : Infinity;
+	let deltaA = 0, deltaB = 0, deltaAB = NaN; // delta<x>: index increment in the conversion described by <x>
+	let indexA = 0, indexB = 0, indexAB = 0; // index<x>: index for the next element of <x> to deduce a conversion from
+	for ( let index of indices ) {
+		// A conversion: Impact of curation on fromCurated
+		if ( index >= changeA ) { // Rule update
+			do {
+				deltaA = a[ indexA ][ 0 ] - changeA;
+				indexA++;
+				changeA = ( indexA < a.length ) ? a[ indexA ][ 1 ] : Infinity;
+			} while ( index >= changeA );
+		}
+		index += deltaA; // Conversion
+		// AB conversion: Texts matching
+		if ( index >= changeAB ) { // Rule update
+			do {
+				if ( isNaN( deltaAB ) ) {
+					deltaAB = ab[ indexAB ][ 1 ] - changeAB;
+					changeAB = changeAB + ab[ indexAB ][ 2 ];
+				} else {
+					indexAB++;
+					deltaAB = NaN;
+					changeAB = ( indexAB < ab.length ) ? ab[ indexAB ][ 0 ] : Infinity;
+				}
+			} while ( index >= changeAB );
+		}
+		if ( isNaN( deltaAB ) ) { // Conversion
+			res.push( -1 );
+			continue;
+		}
+		index += deltaAB;
+		// A conversion: Impact of curation on fromCurated
+		if ( index >= changeB ) { // Rule update
+			do {
+				deltaB = b[ indexB ][ 1 ] - changeB;
+				indexB++;
+				changeB = ( indexB < b.length ) ? b[ indexB ][ 0 ] : Infinity;
+			} while ( index >= changeB );
+		}
+		index += deltaB; // Conversion
+		res.push( index );
+	}
+	return res;
+}
 
 /**
  * Identified the macthing bits between to strings.
