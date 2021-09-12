@@ -6,7 +6,6 @@ import {
 	FetchError,
 	ytData,
 } from 'App/Modules/youtubeFetch';
-import databaseConfig from '_archive/ytcaption/config/database';
 
 export default class CaptionsController {
 
@@ -29,28 +28,12 @@ export default class CaptionsController {
 
 	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void | string> {
 		try {
-			// Fetch the video data
 			const data: ytData = await ytFetchVideo( params.id );
-			// If there are both automatic and manual captions, check if combining is possible, then add that as a possibility
-			if ( data.lang && data.captions.auto ) {
-				const lang = CaptionsController.matchLanguageKeyIn( data.captions, data.lang );
-				if ( lang ) {
-					const auto = data.captions.auto;
-					const manual = data.captions[ lang ];
-					delete data.captions.auto;
-					delete data.captions[ lang ];
-					data.captions = {
-						auto: auto,
-						mix: auto + '@' + manual,
-						[ lang ]: manual,
-						...data.captions
-					}
-				}
-			}
-			// Create the page
+			CaptionsController.mixCaptions( data );
 			return view.render( 'video', data );
 		} catch ( e ) {
 			return FetchError.raise( response, e );
+			//TODO Handle video not found
 		}
 	}
 
@@ -67,23 +50,26 @@ export default class CaptionsController {
 			if ( lang === '0' ) lang = 'auto';
 			else if ( lang === '00' ) lang = 'mix';
 			//   Fetch the data
+			let videoData: ytData;
 			try {
-				reqData = await ytFetchVideo( params.id );
+				videoData = await ytFetchVideo( params.id );
 			} catch ( e ) {
 				return FetchError.raise( response, e );
+				//TODO Handle video not found
 			}
 			//   Find the proper file(s) url
 			urls = [];
 			if ( lang === 'mix' ) {
-				if ( reqData.captions.auto ) urls.push( reqData.captions.auto );
-				lang = reqData.lang;
+				if ( videoData.captions.auto ) urls.push( videoData.captions.auto );
+				lang = videoData.lang;
 			}
-			lang = CaptionsController.matchLanguageKeyIn( reqData.captions, lang );
-			if ( lang ) urls.push( reqData.captions[ lang ] );
-			if ( !urls.length ) {
-				return response.status( 404 ).send( 'The requested captions do not exist.' );
-				//TODO  Error: → video page with error message, providing reqData (→ use POST)
+			lang = CaptionsController.matchLanguageKeyIn( videoData.captions, lang );
+			if ( lang ) urls.push( videoData.captions[ lang ] );
+			if ( ! urls.length ) {
+				CaptionsController.mixCaptions( videoData );
+				return view.render( 'video', { error: 'The requested captions do not exist.', ...videoData } );
 			}
+			reqData = videoData;
 		}
 		// Fetch the captions
 		let captions: [ String, String ][];
@@ -153,6 +139,28 @@ export default class CaptionsController {
 			if ( key.startsWith( lang ) ) return key;
 		}
 		return '';
+	}
+
+	/**
+	 * If there are both automatic and manual captions, check if combining is possible, then add that as a possibility
+	 * @param {ytData} data Video data to modify if need be
+	 */
+	private static mixCaptions( data: ytData ) {
+		if ( data.lang && data.captions.auto ) {
+			const lang = CaptionsController.matchLanguageKeyIn( data.captions, data.lang );
+			if ( lang ) {
+				const auto = data.captions.auto;
+				const manual = data.captions[ lang ];
+				delete data.captions.auto;
+				delete data.captions[ lang ];
+				data.captions = {
+					auto: auto,
+					mix: auto + '@' + manual,
+					[ lang ]: manual,
+					...data.captions
+				}
+			}
+		}
 	}
 }
 

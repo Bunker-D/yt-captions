@@ -11,9 +11,10 @@
 		.video-descriptor {
 			border-top: 4px solid #dc0000;
 			padding-top: .2em;
+			margin-bottom: 2.5em;
 		}
 
-		p { margin: 2em 0 .7em 0; }
+		p { margin: .7em 0; }
 		.spreader {
 			display: flex;
 			justify-content: space-around;
@@ -48,6 +49,9 @@
 	<img src="/yt-captions.png">
 	<div>
 		@!videoDescriptor( { id: id, title: title, channel: channel, date: date } )
+		@if( error )
+			<p class="error">{{ error }}</p>
+		@endif
 		<p>Available captions:&nbsp;&nbsp;&nbsp;</p>
 		@if( Object.keys( captions ).length )
 			{{-- captionsStr = "<lang>@<url>|<lang>@<url>|<lang>@<url>…" --}}
@@ -79,6 +83,10 @@
 	</div>
 </div>
 </main>
+
+@if( error )
+	<script>window.history.pushState( {}, '', '/{{ id }}' );</script>
+@endif
 
 </body>
 </html>
