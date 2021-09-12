@@ -65,32 +65,6 @@ export async function fetchVideo( id: string ): Promise<ytData> {
 			}
 		}
 	}
-	// If there are both automatic and manual captions, check if combining is possible, then add that as a possibility
-	if ( data.lang && data.captions.auto ) {
-		let lang = data.lang;
-		let original = data.captions[ lang ];
-		if ( ! original ) {
-			const s = lang + '-';
-			for ( lang in data.captions ) {
-				if ( lang.startsWith( s ) ) {
-					original = data.captions[ lang ];
-					break;
-				}
-			}
-		}
-		if ( original ) {
-			const auto = data.captions.auto;
-			const manual = data.captions[ lang ];
-			delete data.captions.auto;
-			delete data.captions[ lang ];
-			data.captions = {
-				auto: auto,
-				mix: auto + '@' + original,
-				[ lang ]: manual,
-				...data.captions
-			}
-		}
-	}
 	return data;
 }
 

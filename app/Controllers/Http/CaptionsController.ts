@@ -28,7 +28,35 @@ export default class CaptionsController {
 
 	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void | string> {
 		try {
+			// Fetch the video data
 			const data: ytData = await ytFetchVideo( params.id );
+			// If there are both automatic and manual captions, check if combining is possible, then add that as a possibility
+			if ( data.lang && data.captions.auto ) {
+				let lang = data.lang;
+				let original = data.captions[ lang ];
+				if ( ! original ) {
+					const s = lang + '-';
+					for ( lang in data.captions ) {
+						if ( lang.startsWith( s ) ) {
+							original = data.captions[ lang ];
+							break;
+						}
+					}
+				}
+				if ( original ) {
+					const auto = data.captions.auto;
+					const manual = data.captions[ lang ];
+					delete data.captions.auto;
+					delete data.captions[ lang ];
+					data.captions = {
+						auto: auto,
+						mix: auto + '@' + original,
+						[ lang ]: manual,
+						...data.captions
+					}
+				}
+			}
+			// Create the page
 			return view.render( 'video', data );
 		} catch ( e ) {
 			return FetchError.raise( response, e );
@@ -38,7 +66,7 @@ export default class CaptionsController {
 	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
 		const body = request.body();
 		if ( ! body.captions ) {
-			/*TODO fetchCaptions when vido data lacking
+			/*TODO fetchCaptions when video data lacking
 				→ Should fetch video data to try to find the proper url.
 				→ If track doesn't exist, redirect to /params.id, with post to not repeat the data fetch.
 				→ /!\ auto + manual 
@@ -119,9 +147,9 @@ export default class CaptionsController {
 }
 
 
-/*TODO  Export button: Export to .srt
-*/
 /*TODO  Save and Load capabilities
+*/
+/*TODO  Export button: Export to .srt
 */
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
 */
