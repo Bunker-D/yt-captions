@@ -102,7 +102,6 @@ export async function fetchVideo( id: string ): Promise<ytData> {
  * @async
  */
 export async function fetchCaptions( url: string, msResolution: boolean = true ): Promise<[ string, string ][]> {
-	//BUG Missing first character and spaces between lines for non-auto scripts
 	// Fetch the captions
 	const resp = await fetch( url );
 	if ( resp.status !== 200 ) {
@@ -125,7 +124,7 @@ export async function fetchCaptions( url: string, msResolution: boolean = true )
 			time = m[ 1 ]; // Store showing time
 			continue;
 		}
-		if ( time ) { // It is a text line
+		if ( time ) { // It is a text line (first timing met, so not a header)
 			if ( line.endsWith( '</c>' ) ) { // It is a line with word-level timing
 				const i = text.length; // Index for the first word (to be read later)
 				text.push( [ '', '' ] ); // Make some room for the first word
@@ -137,7 +136,7 @@ export async function fetchCaptions( url: string, msResolution: boolean = true )
 					} ),
 				]; // Store the remaining first word
 				last = line.replace( regTimedWord, '$2' ); // Store what was just read
-			} else if ( line !== last ) text.push( [ time, line ] ); // It is a line without timing, which might be a double
+			} else if ( line !== last ) text.push( [ time, ' ' + line ] ); // It is a line without timing, which might be a double
 		}
 	}
 	if ( ! text.length ) return []; // No text, stop there
