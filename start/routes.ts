@@ -7,7 +7,7 @@
 // import { Response } from '@adonisjs/http-server/build/standalone';
 import Route from '@ioc:Adonis/Core/Route';
 
-//TODO TEST RETLATED
+//HACK  test route — to be deleted
 Route.get( '/test', 'CaptionsController.test' );
 
 // Home page
@@ -25,7 +25,7 @@ Route.get( '/https:/*', 'CaptionsController.urlParse' );
 Route.get( '/youtube.com/*', 'CaptionsController.urlParse' );
 Route.get( '/www.youtube.com/*', 'CaptionsController.urlParse' );
 
-// Prompt for a video + language // TODO
+// Prompt for a video + language
 Route.get( '/:id/:lang', 'CaptionsController.fetchCaptions' );
 Route.post( '/:id/:lang', 'CaptionsController.fetchCaptions' );
 

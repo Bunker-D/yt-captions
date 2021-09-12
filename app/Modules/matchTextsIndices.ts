@@ -10,8 +10,8 @@ export default function matchIndices( fromText: string, toText: string, indices:
 	const [ fromCurated, a ] = curateStr( fromText ); // Curation: remove capital letters, accents, punctuation, excess spaces…
 	const [ toCurated, b ] = curateStr( toText );
 	const ab = getMatches( fromCurated, toCurated );
-	if ( ! a.length ) a.push( [ 0, 0 ] )
-	if ( ! b.length ) b.push( [ 0, 0 ] )
+	if ( ! a.length ) a.push( [ 0, 0 ] );
+	if ( ! b.length ) b.push( [ 0, 0 ] );
 	let changeA = ( a.length ) ? a[ 0 ][ 1 ] : Infinity; // change<x>: next input index where the conversion rule described by <x> changes
 	let changeB = ( b.length ) ? b[ 0 ][ 0 ] : Infinity;
 	let changeAB = ( ab.length ) ? ab[ 0 ][ 0 ] : Infinity;
@@ -66,7 +66,8 @@ export default function matchIndices( fromText: string, toText: string, indices:
  * @returns {[number,number,number][]} List of [ start index in a, start index in b, length of the match ]
  */
 function getMatches( a: string, b: string ): [ number, number, number ][] {
-	//TODO  Very slow for long texts. Timiting the offsets tried in getMatches could be a good idea
+	/*IMPROVE  Very slow for long texts.
+		Limiting the offsets tried in getMatches could be a good idea. */
 	let [ i, j, n ] = longestMatch( a, b );
 	if ( n ) {
 		const left = ( i && j ) ? getMatches( a.substr( 0, i ), b.substr( 0, j ) ) : [];

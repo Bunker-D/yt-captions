@@ -18,10 +18,10 @@ import HttpExceptionHandler from '@ioc:Adonis/Core/HttpExceptionHandler';
 
 export default class ExceptionHandler extends HttpExceptionHandler {
 	protected statusPages = {
-		//TODO  400 for invalid prompt format (not a youtube video), as an alternative version of the home page
-		'403': 'errors/unauthorized', //TODO  Clear
-		'404': 'errors/not-found', //TODO  Personalize, as an alternative version of the home page
-		'500..599': 'errors/server-error', //TODO
+		'400': 'errors/unauthorized', // HACK
+		'403': 'errors/unauthorized', // HACK
+		'404': 'errors/not-found', // HACK
+		'500..599': 'errors/server-error', // HACK
 	}
 
 	constructor() {

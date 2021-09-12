@@ -102,10 +102,9 @@ export async function fetchVideo( id: string ): Promise<ytData> {
  * @async
  */
 export async function fetchCaptions( url: string, msResolution: boolean = true ): Promise<[ string, string ][]> {
-	//TODO Missing first character and spaces between lines for non-auto scripts
+	//BUG Missing first character and spaces between lines for non-auto scripts
 	// Fetch the captions
 	const resp = await fetch( url );
-	//TODO resp.status = 404 when not found
 	if ( resp.status !== 200 ) {
 		if ( resp.status === 404 ) throw new FetchError( 404, 'Captions file not found.' );
 		throw 0;
