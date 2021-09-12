@@ -174,7 +174,7 @@ interface YtResponseExtended extends YtResponse {
  * @param {string} date Date to convert, in "yyyymmdd" format
  * @returns {string} Date in human format (or empty string if the input parameter doesn't match the expected format)
  */
-function dateReformat( date: string ): string { //TODO make it a reformatting — if need be — in ytData creator
+function dateReformat( date: string ): string {
 	if ( typeof date === 'string' && date.match( /^\d\d\d\d\d\d\d\d$/ ) ) {
 		return (
 			[ 'Jan. ', 'Feb. ', 'March ', 'Apr. ', 'May ', 'June ', 'July ', 'Aug. ', 'Sept. ', 'Oct. ', 'Nov. ', 'Dec. ' ][ Number( date.substr( 4, 2 ) ) - 1 ] +

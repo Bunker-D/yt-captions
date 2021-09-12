@@ -6,6 +6,7 @@ import {
 	FetchError,
 	ytData,
 } from 'App/Modules/youtubeFetch';
+import databaseConfig from '_archive/ytcaption/config/database';
 
 export default class CaptionsController {
 
@@ -55,33 +56,36 @@ export default class CaptionsController {
 
 	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
 		let reqData = request.body();
-		let url: string = reqData.url;
-		if ( ! url ) {
+		let urls: string[];
+		if ( reqData.url ) {
+			urls = reqData.url.split( '@' );
+		} else {
 			// Relevant data lacking (probably here from a GET), go fetch video data
+			//   Language shorthand conversion
 			let lang = params.lang;
-			//TODO Track id shorthands should be defined in some file
+			//TODO  Track id shorthands should be defined in some file
 			if ( lang === '0' ) lang = 'auto';
 			else if ( lang === '00' ) lang = 'mix';
+			//   Fetch the data
 			try {
 				reqData = await ytFetchVideo( params.id );
 			} catch ( e ) {
 				return FetchError.raise( response, e );
 			}
-			url = CaptionsController.matchLanguageKeyIn( reqData.captions, lang );
-			//TODO  Proper handling of mix (ytFetchVideo doesn't create mix info itself!)
-			if ( url ) {
-				url = reqData.captions[ url ];
-			} else {
-				if ( ( lang === 'mix' ) && ('auto' in reqData.captions ) ) { // If mix requested, default to auto if any
-					url = reqData.captions.auto;
-				} else {
-					return response.status( 404 ).send( 'The requested captions do not exist.' );
-				}
+			//   Find the proper file(s) url
+			urls = [];
+			if ( lang === 'mix' ) {
+				if ( reqData.captions.auto ) urls.push( reqData.captions.auto );
+				lang = reqData.lang;
+			}
+			lang = CaptionsController.matchLanguageKeyIn( reqData.captions, lang );
+			if ( lang ) urls.push( reqData.captions[ lang ] );
+			if ( !urls.length ) {
+				return response.status( 404 ).send( 'The requested captions do not exist.' );
 				//TODO  Error: → video page with error message, providing reqData (→ use POST)
 			}
 		}
 		// Fetch the captions
-		const urls: string[] = url.split( '@' );
 		let captions: [ String, String ][];
 		if ( urls.length > 1 ) { // Two captions files to combine (time and text)
 			const auto = await ytFetchCaptions( urls[ 0 ] ); // First track: automatic captions
@@ -124,7 +128,7 @@ export default class CaptionsController {
 			}
 			if ( t ) captions.push( [ t, text.substring( s, indices[ i ] ) ] );
 		} else { // One single captions file
-			captions = await ytFetchCaptions( url );
+			captions = await ytFetchCaptions( urls[ 0 ] );
 		}
 		// Build page
 		return view.render( 'captions', {

@@ -158,7 +158,7 @@ function longestMatch( a: string, b: string ): [number,number,number] {
 	let iMap: [number,number][] = []; // Indices map
 	return [
 		str.toLowerCase() // Go lower case
-			.normalize( "NFD" ).replace( /[\u0300-\u036f]/g, "" ) // Remove accents and other special characters (e.g., ç → c)
+			.normalize( 'NFD' ).replace( /[\u0300-\u036f]/g, '' ) // Remove accents and other special characters (e.g., ç → c)
 			.replace( /^[^a-z0-9]*/, ( punct: string ) => { // Handle starting spaces and punctuation
 				d = punct.length;
 				return '';
@@ -177,30 +177,3 @@ function longestMatch( a: string, b: string ): [number,number,number] {
 		iMap
 	];
 }
-
-
-/*
-export default function test(): string {
-	const script = "— Ça c'est un texte. Evidemment, ponctuation. (?) Superbes petits oiseaux à l'horizon. Et autres histoires.";
-	const autocap = "ça c'est un test évidemment ponctuation zzzzzzzzzzzzz superbe petit oiseau allo rions et autres histoires";
-	const writeTics = ( tics: number[] ) => {
-		let a = ' '.repeat( Math.max( 0, ...tics ) );
-		let b = a;
-		let k = 'a'.charCodeAt( 0 );
-		for ( const t of tics ) {
-			if ( t >= 0 ) {
-				a = a.substr( 0, t ) + '^' + a.substr( t + 1 );
-				b = b.substr( 0, t ) + String.fromCharCode( k ) + b.substr( t + 1 );
-			}
-			k++;
-		}
-		return '\n' + a + '\n' + b;
-	};
-	const tics = [ 0 ];
-	for ( const w of autocap.split( ' ' ) ) tics.push( tics[ tics.length - 1 ] + w.length + 1 );
-	const newTics = matchIndices( autocap, script, tics );
-	console.log( tics );
-	console.log( newTics );
-	return autocap + writeTics( tics ) + '\n\n' + script + writeTics( newTics );
-}
-*/
