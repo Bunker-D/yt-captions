@@ -51,7 +51,6 @@
 		<p>Available captions:&nbsp;&nbsp;&nbsp;</p>
 		@if( Object.keys( captions ).length )
 			{{-- captionsStr = "<lang>@<url>|<lang>@<url>|<lang>@<url>…" --}}
-			@set( 'captionsStr', Object.keys( captions ).map( ( k ) => k + '@' + captions[ k ] ).join( '|' ) )
 			@set( 'newLine', ( 'mix' in captions ) ? Object.keys( captions )[ 2 ] : ( 'auto' in captions ) ? 'auto' : false)
 			<div
 				@if( newLine )
@@ -62,12 +61,11 @@
 			>
 				@each( ( url, lang ) in captions )
 					<form action="/{{ id }}/{{ ( lang === 'auto' ) ? '0' : ( lang === 'mix' ) ? '00' : lang }}" method="POST">
-						<input type="hidden" id="id" name="id" value="{{ id }}" >
-						<input type="hidden" id="url" name="url" value="{{ url }}" >
 						<input type="hidden" id="title" name="title" value="{{ title }}" >
 						<input type="hidden" id="channel" name="channel" value="{{ channel }}" >
 						<input type="hidden" id="date" name="date" value="{{ date }}" >
-						<input type="hidden" id="captions" name="captions" value="{{ captionsStr }}" >
+						<input type="hidden" id="id" name="id" value="{{ id }}" >
+						<input type="hidden" id="url" name="url" value="{{ url }}" >
 						<input type="submit" value="{{ ( lang === 'mix' ) ? ( 'auto + ' + Object.keys( captions )[ 2 ] ) : lang }}">
 					</form>
 					@if( lang === newLine )

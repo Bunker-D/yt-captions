@@ -32,25 +32,15 @@ export default class CaptionsController {
 			const data: ytData = await ytFetchVideo( params.id );
 			// If there are both automatic and manual captions, check if combining is possible, then add that as a possibility
 			if ( data.lang && data.captions.auto ) {
-				let lang = data.lang;
-				let original = data.captions[ lang ];
-				if ( ! original ) {
-					const s = lang + '-';
-					for ( lang in data.captions ) {
-						if ( lang.startsWith( s ) ) {
-							original = data.captions[ lang ];
-							break;
-						}
-					}
-				}
-				if ( original ) {
+				const lang = CaptionsController.matchLanguageKeyIn( data.captions, data.lang );
+				if ( lang ) {
 					const auto = data.captions.auto;
 					const manual = data.captions[ lang ];
 					delete data.captions.auto;
 					delete data.captions[ lang ];
 					data.captions = {
 						auto: auto,
-						mix: auto + '@' + original,
+						mix: auto + '@' + manual,
 						[ lang ]: manual,
 						...data.captions
 					}
@@ -64,27 +54,31 @@ export default class CaptionsController {
 	}
 
 	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
-		const body = request.body();
-		if ( ! body.captions ) {
-			/*TODO fetchCaptions when video data lacking
-				→ Should fetch video data to try to find the proper url.
-				→ If track doesn't exist, redirect to /params.id, with post to not repeat the data fetch.
-				→ /!\ auto + manual 
-			*/
-			return response.status( 400 ).send( 'TO BE DONE:  here without captions file url' ); //HACK
-		}
-		// Identify the proper url (urls provided as "<lang>@<url>|<lang>@<url>|<lang>@<url>|…")
-		let url: string = params.lang;
-		if ( url === "0" ) url = "auto";
-		if ( url === "00" ) url = "mix";
-		try {
-			url = (
-				body.captions.match( new RegExp( `(?<=(^|\\|)${ url }@)(.*?)(?=(\\||$))` ) ) || // e.g. looked for "en", found "en"
-				body.captions.match( new RegExp( `(?<=(^|\\|)${ url }\\-[^@]*@)(.*?)(?=(\\||$))` ) ) // e.g. looked for "en", found "en-UK"
-			)[ 0 ];
-		} catch ( e ) {
-			return response.status( 404 ).send( 'The requested captions do not exist.' );
-			//TODO  Error: → video page with error message.
+		let reqData = request.body();
+		let url: string = reqData.url;
+		if ( ! url ) {
+			// Relevant data lacking (probably here from a GET), go fetch video data
+			let lang = params.lang;
+			//TODO Track id shorthands should be defined in some file
+			if ( lang === '0' ) lang = 'auto';
+			else if ( lang === '00' ) lang = 'mix';
+			try {
+				reqData = await ytFetchVideo( params.id );
+			} catch ( e ) {
+				return FetchError.raise( response, e );
+			}
+			url = CaptionsController.matchLanguageKeyIn( reqData.captions, lang );
+			//TODO  Proper handling of mix (ytFetchVideo doesn't create mix info itself!)
+			if ( url ) {
+				url = reqData.captions[ url ];
+			} else {
+				if ( ( lang === 'mix' ) && ('auto' in reqData.captions ) ) { // If mix requested, default to auto if any
+					url = reqData.captions.auto;
+				} else {
+					return response.status( 404 ).send( 'The requested captions do not exist.' );
+				}
+				//TODO  Error: → video page with error message, providing reqData (→ use POST)
+			}
 		}
 		// Fetch the captions
 		const urls: string[] = url.split( '@' );
@@ -112,7 +106,6 @@ export default class CaptionsController {
 				if ( indices[ i ] >= 0 ) {
 					t = auto[ i ][ 0 ];
 					s = indices[ i ];
-					console.log( s );
 					if ( s > 0 ) {
 						captions.push( [
 							auto[ 0 ][ 0 ].replace( /[0-9]/g, '0' ), // If not times, start put at 00:00.000
@@ -133,17 +126,30 @@ export default class CaptionsController {
 		} else { // One single captions file
 			captions = await ytFetchCaptions( url );
 		}
-
 		// Build page
 		return view.render( 'captions', {
-			title: body.title,
-			channel: body.channel,
-			date: body.date,
-			id: body.id,
+			title: reqData.title,
+			channel: reqData.channel,
+			date: reqData.date,
+			id: reqData.id,
 			text: captions,
 		} );
 	}
 
+	/**
+	 * In an object, find the value corresponding to a language keyword, knowing that for example 'en' might be here as 'en-US'.
+	 * @param {Object.<string,string>} obj Object to explore
+	 * @param {string} lang Language to look for
+	 * @returns {string} Value (or empty string language not found)
+	 */
+	private static matchLanguageKeyIn( obj: {[key:string]:string}, lang: string ): string {
+		if ( lang in obj ) return lang;
+		lang += '-';
+		for ( const key in obj ) {
+			if ( key.startsWith( lang ) ) return key;
+		}
+		return '';
+	}
 }
 
 
