@@ -9,7 +9,15 @@ export default function matchIndices( fromText: string, toText: string, indices:
 	const res: number[] = [];
 	const [ fromCurated, a ] = curateStr( fromText ); // Curation: remove capital letters, accents, punctuation, excess spaces…
 	const [ toCurated, b ] = curateStr( toText );
-	const ab = getMatches( fromCurated, toCurated );
+	let ab!: [ number, number, number ][];
+	for ( const maxOffset of [ 400, 1000, 0 ] ) {
+		// To accelerate the computation in most cases, we first limit the considered offset, then extend if 93% matching target isn't reached.
+		// (Handling a 1h40 video could be dropped from 110s to 5.5s.)
+		ab = getMatches( fromCurated, toCurated, maxOffset );
+		let match = 0;
+		for ( const x of ab ) match += x[ 2 ];
+		if ( match > .93 * ( ( fromCurated.length < toCurated.length ) ? fromCurated.length : toCurated.length ) ) break;
+	}
 	if ( ! a.length ) a.push( [ 0, 0 ] );
 	if ( ! b.length ) b.push( [ 0, 0 ] );
 	let changeA = ( a.length ) ? a[ 0 ][ 1 ] : Infinity; // change<x>: next input index where the conversion rule described by <x> changes
@@ -65,16 +73,16 @@ export default function matchIndices( fromText: string, toText: string, indices:
  * @param {string} b String to compare
  * @returns {[number,number,number][]} List of [ start index in a, start index in b, length of the match ]
  */
-function getMatches( a: string, b: string ): [ number, number, number ][] {
+function getMatches( a: string, b: string, maxOffset: number ): [ number, number, number ][] {
 	/*IMPROVE  Very slow for long texts.
 		Limiting the offsets tried in getMatches could be a good idea. */
-	let [ i, j, n ] = longestMatch( a, b );
+	let [ i, j, n ] = longestMatch( a, b, maxOffset );
 	if ( n ) {
-		const left = ( i && j ) ? getMatches( a.substr( 0, i ), b.substr( 0, j ) ) : [];
+		const left = ( i && j ) ? getMatches( a.substr( 0, i ), b.substr( 0, j ), maxOffset ) : [];
 		left.push( [ i, j, n ] );
 		i += n;
 		j += n;
-		const right = ( i < a.length && j < b.length ) ? getMatches( a.substr( i ), b.substr( j ) ) : [];
+		const right = ( i < a.length && j < b.length ) ? getMatches( a.substr( i ), b.substr( j ), maxOffset ) : [];
 		for ( let k = right.length; k--; ) {
 			right[ k ][ 0 ] += i;
 			right[ k ][ 1 ] += j;
@@ -88,17 +96,40 @@ function getMatches( a: string, b: string ): [ number, number, number ][] {
  * Find the longest match among to strings.
  * @param {string} a String to compare
  * @param {string} b String to compare
+ * @param {number} [maxOffset] Maximal offset tested beyond a-b length mismatch. If 0, no limit (default).
  * @returns {[number,number,number]} [ start index in a, start index in b, length of the match ]
  */
-function longestMatch( a: string, b: string ): [number,number,number] {
+function longestMatch( a: string, b: string, maxOffset: number ): [number,number,number] {
 	const aLen = a.length;
 	const bLen = b.length;
 	const [ minLen, maxLen, lastONeg ] = ( aLen < bLen ) ? [ aLen, bLen, true ] : [ bLen, aLen, false ];
-	let oMax = maxLen, oMax2 = minLen; // Maximal offset to test for any or both direction (resp.)
-
 	let mLen: number = 0; // Length of the maximal match
 	let mIndex!: number; // a Index of the maximal match
 	let mOAbs!: number, mONeg!: boolean; // b offset for the maximal match
+	let oMax: number = maxLen, oMax2: number = minLen; // Maximal offset to test for last or both direction (resp.)
+	let updateOMax: () => void, updateOMax2: () => void;
+	if ( maxOffset ) {
+		oMax = ( maxLen - minLen ) + maxOffset;
+		oMax2 = maxOffset;
+		updateOMax = () => {
+			if ( maxLen - mLen < oMax ) {
+				oMax = maxLen - mLen;
+				updateOMax = () => { oMax = maxLen - mLen; };
+			}
+		};
+		updateOMax2 = () => {
+			if ( minLen - mLen < oMax2 ) {
+				oMax2 = minLen - mLen;
+				updateOMax2 = () => { oMax2 = minLen - mLen; };
+			}
+		};
+	} else {
+		oMax = maxLen;
+		oMax2 = minLen;
+		updateOMax = () => { oMax = maxLen - mLen; }; // Overlapping must be sufficient to get reach a given length
+		updateOMax2 = () => { oMax2 = minLen - mLen; };
+	}
+
 	const remember = ( start: number, finish: number, oAbs: number, oNeg: boolean ) => { // Update values if need be after a match from 'start' to 'finish'
 		if ( start >= 0 ) {
 			if ( finish - start > mLen ) {
@@ -106,11 +137,8 @@ function longestMatch( a: string, b: string ): [number,number,number] {
 				mIndex = start;
 				mOAbs = oAbs;
 				mONeg = oNeg;
-				// To bit that, the overlapping length must be  > mLen
-				// from which it needs, when  oNeg:  bLen - oAbs > mLen
-				//                  and when !oNeg:  aLen - oAbs > mLen
-				oMax = maxLen - mLen;
-				oMax2 = minLen - mLen;
+				updateOMax();
+				updateOMax2();
 			}
 		}
 	};
