@@ -76,7 +76,6 @@ export async function fetchVideo( id: string ): Promise<ytData> {
  * @async
  */
 export async function fetchCaptions( url: string, msResolution: boolean = true ): Promise<[ string, string ][]> {
-	//BUG  Special characters not converted. e.g. &nbsp; in http://127.0.0.1:3333/4epQSbu2gYQ/en
 	// Fetch the captions
 	const resp = await fetch( url );
 	if ( resp.status !== 200 ) {
@@ -116,13 +115,14 @@ export async function fetchCaptions( url: string, msResolution: boolean = true )
 	}
 	if ( ! text.length ) return []; // No text, stop there
 	text[ 0 ][ 1 ] = text[ 0 ][ 1 ].substr( 1 ); // Remove the spaces added in front of the first line
-	// Strip the timings from excessive front characters + move the spaces: always after words
+	// Strip the timings from excessive front characters + move the spaces (always after words) and remove special characters
 	const zeroes = text[ text.length - 1 ][ 0 ].match( /^0*:?0?/ );
 	const s = ( zeroes ) ? zeroes[ 0 ].length : 0;
 	const n = ( msResolution ) ? undefined : 8 - s;
 	let space = false;
 	for ( let i = text.length - 1; i >= 0; i-- ) {
 		text[ i ][ 0 ] = text[ i ][ 0 ].substr( s, n );
+		text[ i ][ 1 ] = replaceHtmlAmp( text[ i ][ 1 ] ) + ( ( space ) ? ' ' : '' );
 		if ( space ) text[ i ][ 1 ] += " ";
 		space = text[ i ][ 1 ][ 0 ] === " ";
 		if ( space ) text[ i ][ 1 ] = text[ i ][ 1 ].substr( 1 );
@@ -184,4 +184,41 @@ function dateReformat( date: string ): string {
 		);
 	}
 	return '';
+}
+
+/**
+ * Decode &...; and &#...; HTML special characters by their value.
+ * @param {string} str String in which characters should be decoded
+ * @returns {string} String with decoded characters
+ */
+function replaceHtmlAmp( str: string ): string {
+	return str.replace( /&([a-z0-9]+|#([0-9]+));/gi, ( x, m, n ) => {
+		// &#...;
+		if ( n ) return String.fromCharCode( Number( n ) );
+		n = m.toLowerCase();
+		// Most expected characters
+		let c = { nbsp: ' ', quot: '"', apos: "'", amp: '&', lt: '<', gt: '>' }[ n ];
+		if ( c ) return c;
+		// Other case-insentive characters
+		c = {
+			laquo: '«', raquo: '»', ldquo: '“', rdquo: '”', lsquo: '‘', rsquo: '’', sbquo: '‚', bdquo: '„', lsaquo: '‹', rsaquo: '›',
+			iexcl: '¡', cent: '¢', pound: '£', curren: '¤', yen: '¥', brvbar: '¦', sect: '§', uml: '¨', copy: '©', ordf: 'ª',
+			not: '¬', shy: '­', reg: '®', macr: '¯', deg: '°', plusmn: '±', sup2: '²', sup3: '³', acute: '´', micro: 'µ', para: '¶',
+			middot: '·', cedil: '¸', sup1: '¹', ordm: 'º', frac14: '¼', frac12: '½', frac34: '¾', iquest: '¿', times: '×', szlig: 'ß',
+			divide: '÷', yuml: 'ÿ', bull: '•', infin: '∞', permil: '‰', sdot: '⋅', dagger: '†', mdash: '—', perp: '⊥', par: '∥', euro: '€'
+		}[ n ];
+		if ( c ) return c;
+		// Characters with lower and upper case versions
+		c = {
+			agrave: 'Àà', aacute: 'Áá', acirc: 'Ââ', atilde: 'Ãã', auml: 'Ää', aring: 'Åå', aelig: 'Ææ', ccedil: 'Çç',
+			egrave: 'Èè', eacute: 'Éé', ecirc: 'Êê', euml: 'Ëë', igrave: 'Ìì', iacute: 'Íí', icirc: 'Îî', iuml: 'Ïï',
+			eth: 'Ðð', ntilde: 'Ññ', ograve: 'Òò', oacute: 'Óó', ocirc: 'Ôô', otilde: 'Õõ', ouml: 'Öö', oslash: 'Øø',
+			ugrave: 'Ùù', uacute: 'Úú', ucirc: 'Ûû', uuml: 'Üü', yacute: 'Ýý', thorn: 'Þþ',
+			alpha: 'Αα', beta: 'Ββ', gamma: 'Γγ', delta: 'Δδ', epsilon: 'Εε', zeta: 'Ζζ', eta: 'Ηη', theta: 'Θθ',
+			iota: 'Ιι', kappa: 'Κκ', lambda: 'Λλ', mu: 'Μμ', nu: 'Νν', xi: 'Ξξ', omicron: 'Οο', pi: 'Ππ', rho: 'Ρρ',
+			sigma: 'Σσ', tau: 'Ττ', upsilon: 'Υυ', phi: 'Φφ', chi: 'Χχ', psi: 'Ψψ', omega: 'Ωω'
+		}[ n ];
+		if ( c ) return c[ ( m.charCodeAt( 0 ) < 95 ) ? 0 : 1 ];
+		return x;
+	} );
 }
