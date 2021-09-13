@@ -76,6 +76,7 @@ export async function fetchVideo( id: string ): Promise<ytData> {
  * @async
  */
 export async function fetchCaptions( url: string, msResolution: boolean = true ): Promise<[ string, string ][]> {
+	//BUG  Special characters not converted. e.g. &nbsp; in http://127.0.0.1:3333/4epQSbu2gYQ/en
 	// Fetch the captions
 	const resp = await fetch( url );
 	if ( resp.status !== 200 ) {

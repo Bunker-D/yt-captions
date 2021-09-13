@@ -18,13 +18,13 @@ export default class CaptionsController {
 		// return view.render( 'captions', data );
 	}
 
-	public async urlParse( { request, response }: HttpContextContract ): Promise<void> {
+	public async urlParse( { request, response, view }: HttpContextContract ): Promise<void | string> {
 		// Verify it is a youtube url
 		if ( ! request.url().match( /^\/(https?:\/\/)?(www.)?youtube.com\/watch$/i ) ) {
-			return response.status( 400 ).send( 'Invalid' );
+			return view.render( 'home', { error: 'Invalid video url' } );
 		}
 		// Redirect to its id
-		response.redirect( '/' + request.input( 'v' ) );
+		return response.redirect( '/' + request.input( 'v' ) );
 	}
 
 	public async fetchVideo( { params, view }: HttpContextContract ): Promise<void | string> {
