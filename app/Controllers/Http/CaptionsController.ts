@@ -44,19 +44,19 @@ export default class CaptionsController {
 			urls = reqData.url.split( '@' );
 		} else {
 			// Relevant data lacking (probably here from a GET), go fetch video data
-			//   Language shorthand conversion
+			//    Language shorthand conversion
 			let lang = params.lang;
 			//IMPROVE  Track id shorthands should be defined in some file
 			if ( lang === '0' ) lang = 'auto';
 			else if ( lang === '00' ) lang = 'mix';
-			//   Fetch the data
+			//    Fetch the data
 			let videoData: ytData;
 			try {
 				videoData = await ytFetchVideo( params.id );
 			} catch ( e ) {
 				return CaptionsController.videoFetchError( e, view );
 			}
-			//   Find the proper file(s) url
+			//    Find the proper file(s) url
 			urls = [];
 			if ( lang === 'mix' ) {
 				if ( videoData.captions.auto ) urls.push( videoData.captions.auto );
