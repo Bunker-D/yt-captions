@@ -46,7 +46,7 @@ export default class CaptionsController {
 			// Relevant data lacking (probably here from a GET), go fetch video data
 			//   Language shorthand conversion
 			let lang = params.lang;
-			//TODO  Track id shorthands should be defined in some file
+			//IMPROVE  Track id shorthands should be defined in some file
 			if ( lang === '0' ) lang = 'auto';
 			else if ( lang === '00' ) lang = 'mix';
 			//   Fetch the data
