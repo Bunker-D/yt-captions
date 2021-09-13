@@ -1,4 +1,5 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { ViewRendererContract } from '@ioc:Adonis/Core/View';
 import matchTextsIndices from 'App/Modules/matchTextsIndices';
 import {
 	fetchVideo as ytFetchVideo,
@@ -26,18 +27,17 @@ export default class CaptionsController {
 		response.redirect( '/' + request.input( 'v' ) );
 	}
 
-	public async fetchVideo( { params, view, response }: HttpContextContract ): Promise<void | string> {
+	public async fetchVideo( { params, view }: HttpContextContract ): Promise<void | string> {
 		try {
 			const data: ytData = await ytFetchVideo( params.id );
 			CaptionsController.mixCaptions( data );
 			return view.render( 'video', data );
 		} catch ( e ) {
-			return FetchError.raise( response, e );
-			//TODO Handle video not found
+			return CaptionsController.videoFetchError( e, view );
 		}
 	}
 
-	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
+	public async fetchCaptions( { request, params, view }: HttpContextContract ): Promise<void | string> {
 		let reqData = request.body();
 		let urls: string[];
 		if ( reqData.url ) {
@@ -54,8 +54,7 @@ export default class CaptionsController {
 			try {
 				videoData = await ytFetchVideo( params.id );
 			} catch ( e ) {
-				return FetchError.raise( response, e );
-				//TODO Handle video not found
+				return CaptionsController.videoFetchError( e, view );
 			}
 			//   Find the proper file(s) url
 			urls = [];
@@ -160,6 +159,19 @@ export default class CaptionsController {
 					...data.captions
 				}
 			}
+		}
+	}
+
+	/**
+	 * Handles an error at video level.
+	 * @param {Error} error Error to handle
+	 * @param {ViewRendererContract} view View object of the request
+	 */
+	private static videoFetchError( error: Error, view: ViewRendererContract ) {
+		if ( error instanceof FetchError ) {
+			return view.render( 'home', { error: error.message } );
+		} else {
+			return view.render( 'home', { error: 'Something went wrong.', errorDetails: '' + error } );
 		}
 	}
 }

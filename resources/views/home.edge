@@ -24,12 +24,23 @@
 <main>
 <div>
 	<img src="/yt-captions.png">
+	@if( error )
+		<div class="error"
+			@if( errorDetails )
+				title="{{ errorDetails }}"
+			@endif
+		>{{ error }}</div>
+	@endif
 	<form class="middle" action="/prompt" method="GET">
 		<label for="v">Video:</label>
 		<input type="text" id="v" name="v">
 	</form>
 </div>
 </main>
+
+@if( error )
+	<script>window.history.pushState( {}, '', '/' );</script>
+@endif
 
 </body>
 </html>

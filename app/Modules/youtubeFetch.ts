@@ -11,7 +11,7 @@ import { default as fetch } from 'node-fetch';
  */
 export async function fetchVideo( id: string ): Promise<ytData> {
 	// Check the validity of the id format
-	if ( ! id.match( /^[a-zA-Z0-9\-_]{11}$/ ) ) throw new FetchError( 400, 'Invalid' );
+	if ( ! id.match( /^[a-zA-Z0-9\-_]{11}$/ ) ) throw new FetchError( 400, 'Invalid video id' );
 	// Fetch the data from Youtube
 	const url: string = 'https://www.youtube.com/watch?v=' + id;
 	let video: YtResponseExtended;

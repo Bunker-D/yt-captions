@@ -30,16 +30,6 @@
 			border: 2px solid;
     		font-weight: bold;
 		}
-
-		.error {
-			color: #dc0000;
-			font-size: 1.7em;
-			font-weight: bold;
-			border: 5px solid;
-			width: fit-content;
-			margin: .5em auto;
-			padding: .2em 1em;
-		}
 	</style>
 </head>
 <body>
@@ -50,7 +40,7 @@
 	<div>
 		@!videoDescriptor( { id: id, title: title, channel: channel, date: date } )
 		@if( error )
-			<p class="error">{{ error }}</p>
+			<div class="error">{{ error }}</div>
 		@endif
 		<p>Available captions:&nbsp;&nbsp;&nbsp;</p>
 		@if( Object.keys( captions ).length )
