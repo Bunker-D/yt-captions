@@ -183,3 +183,10 @@ export default class CaptionsController {
 */
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
 */
+
+/*BUG Unwanted spaces when syncing
+	Example: C4WbCwF6yh0
+	→ Spaces inserted after “"”
+	→ Space inserted at the end after the M of “[Musique]”
+	→ “%” → “% d d”
+*/

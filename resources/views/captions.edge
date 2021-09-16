@@ -79,12 +79,12 @@
 
 	<blockquote contenteditable="true">
 		<p>
-			@each( bit in text )
-				<span
-					data-time="{{ bit[ 0 ].split( '.' )[ 0 ] }}"
-					data-time-ms="{{ bit[ 0 ] }}"
-				>{{ bit[ 1 ] }}</span>
-			@endeach
+			@each( bit in text )~
+<span
+	data-time="{{ bit[ 0 ].split( '.' )[ 0 ] }}"
+	data-time-ms="{{ bit[ 0 ] }}"
+>{{ bit[ 1 ] }}</span>
+			@endeach~
 		</p>
 	</blockquote>
 	<div class="foot"></div>

@@ -82,7 +82,7 @@ export async function fetchCaptions( url: string, msResolution: boolean = true )
 		if ( resp.status === 404 ) throw new FetchError( 404, 'Captions file not found.' );
 		throw 0;
 	}
-	const captions:string = await ( resp ).text();
+	const captions: string = replaceHtmlAmp( await ( resp ).text() );
 	// Useful regex in reading the captions file
 	const regTimeLine = /^(\d\d:\d\d:\d\d\.\d\d\d) --> \d\d:\d\d:\d\d\.\d\d\d/;
 	const regTimedWord = /<(\d\d:\d\d:\d\d\.\d\d\d)><c>(.+?)<\/c>/g;
@@ -115,14 +115,13 @@ export async function fetchCaptions( url: string, msResolution: boolean = true )
 	}
 	if ( ! text.length ) return []; // No text, stop there
 	text[ 0 ][ 1 ] = text[ 0 ][ 1 ].substr( 1 ); // Remove the spaces added in front of the first line
-	// Strip the timings from excessive front characters + move the spaces (always after words) and remove special characters
+	// Strip the timings from excessive front characters + move the spaces (always after words)
 	const zeroes = text[ text.length - 1 ][ 0 ].match( /^0*:?0?/ );
 	const s = ( zeroes ) ? zeroes[ 0 ].length : 0;
 	const n = ( msResolution ) ? undefined : 8 - s;
 	let space = false;
 	for ( let i = text.length - 1; i >= 0; i-- ) {
 		text[ i ][ 0 ] = text[ i ][ 0 ].substr( s, n );
-		text[ i ][ 1 ] = replaceHtmlAmp( text[ i ][ 1 ] ) + ( ( space ) ? ' ' : '' );
 		if ( space ) text[ i ][ 1 ] += " ";
 		space = text[ i ][ 1 ][ 0 ] === " ";
 		if ( space ) text[ i ][ 1 ] = text[ i ][ 1 ].substr( 1 );
