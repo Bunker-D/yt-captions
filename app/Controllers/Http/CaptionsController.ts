@@ -37,7 +37,7 @@ export default class CaptionsController {
 		}
 	}
 
-	public async fetchCaptions( { request, params, view }: HttpContextContract ): Promise<void | string> {
+	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
 		let reqData = request.body();
 		let urls: string[];
 		if ( reqData.url ) {
@@ -72,48 +72,17 @@ export default class CaptionsController {
 		}
 		// Fetch the captions
 		let captions: [ String, String ][];
-		if ( urls.length > 1 ) { // Two captions files to combine (time and text)
-			const auto = await ytFetchCaptions( urls[ 0 ] ); // First track: automatic captions
-			let text: [ string, string ][] | string = await ytFetchCaptions( urls[ 1 ] ); // Second track: manual captions
-			text = text.map( ( x ) => x[ 1 ] ).join( '' ); // Keep just the text from manual captions
-			let indices: number[] = []; // Build the indices of where timings apply in first track (automatic captions)
-			let i = 0;
-			for ( const x of auto ) {
-				indices.push( i );
-				i += x[ 1 ].length;
-			}
-			indices = matchTextsIndices(  // convert those indices to match the second track (manual captions)
-				auto.map( ( x ) => x[ 1 ] ).join( '' ),
-				text,
-				indices
-			);
-			captions = [];
-			i = 0;
-			let t!: string;
-			let s!: number;
-			for ( ; i < indices.length; i++ ) {
-				if ( indices[ i ] >= 0 ) {
-					t = auto[ i ][ 0 ];
-					s = indices[ i ];
-					if ( s > 0 ) {
-						captions.push( [
-							auto[ 0 ][ 0 ].replace( /[0-9]/g, '0' ), // If not times, start put at 00:00.000
-							text.substring( 0, s )
-						] );
-					}
-					break;
-				}
-			}
-			for ( ; i < indices.length; i++ ) {
-				if ( indices[ i ] >= 0 ) {
-					captions.push( [ t, text.substring( s, indices[ i ] ) ] );
-					t = auto[ i ][ 0 ];
-					s = indices[ i ];
-				}
-			}
-			if ( t ) captions.push( [ t, text.substring( s, indices[ i ] ) ] );
-		} else { // One single captions file
-			captions = await ytFetchCaptions( urls[ 0 ] );
+		try {
+			captions =
+			   ( urls.length > 1 ) ? // Two captions files to combine (time and text)
+				   CaptionsController.retextCaptions(
+					   await ytFetchCaptions( urls[ 0 ] ),
+					   ( await ytFetchCaptions( urls[ 1 ] ) ).map( ( x ) => x[ 1 ] ).join( '' )
+				   )
+			   : // One single captions file
+				   await ytFetchCaptions( urls[ 0 ] );
+		} catch ( e ) {
+			return response.redirect( request.url() );
 		}
 		// Build page
 		return view.render( 'captions', {
@@ -160,6 +129,82 @@ export default class CaptionsController {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Produce captions based on original (timed) captions and a proper text.
+	 * @param captions Captions providing the basis for timings
+	 * @param text Text of the captions to create
+	 * @returns {[string,string][]} Created captions
+	 */
+	private static retextCaptions( captions: [ string, string ][], text: string ) {
+		// Build the indices of where timings apply in original captions
+		let indices: number[] = [];
+		let i = 0;
+		for ( const x of captions ) {
+			indices.push( i );
+			i += x[ 1 ].length;
+		}
+		// Convert those indices to match the provided text
+		indices = matchTextsIndices(
+			captions.map( ( x ) => x[ 1 ] ).join( '' ),
+			text,
+			indices
+		);
+		// Build the target captions
+		const result: [ string, string ][] = [];
+		let t!: string;
+		let s!: number;
+		i = 0;
+		for ( ; i < indices.length; i++ ) { // Get the first block
+			if ( indices[ i ] >= 0 ) {
+				t = captions[ i ][ 0 ];
+				s = indices[ i ];
+				if ( s > 0 ) {
+					result.push( [
+						captions[ 0 ][ 0 ].replace( /\d/g, '0' ), // If not timed, start put at 00:00.000
+						text.substring( 0, s )
+					] );
+				}
+				break;
+			}
+		}
+		for ( ; i < indices.length; i++ ) { // Continue
+			if ( indices[ i ] >= 0 ) {
+				result.push( [ t, text.substring( s, indices[ i ] ) ] );
+				t = captions[ i ][ 0 ];
+				s = indices[ i ];
+			}
+		}
+		if ( t ) result.push( [ t, text.substring( s, indices[ i ] ) ] );
+		// Move opening quotes, parenthesis, etc within the following block
+		const reg = /([\(\[\{‘“«‚„<¿¡]|(--+|[–—])|(?<=\ )[-'"])\ *$/;
+		let m: RegExpMatchArray | null;
+		let opened = false;
+		let str = '';
+		for ( let i = 0; i < result.length; i++ ) {
+			str = result[ i ][ 1 ];
+			if ( opened && ( str.indexOf( '.' ) >= 0 || str.indexOf( '?' ) >= 0 || str.indexOf( '!' ) >= 0 ) ) {
+				opened = false;
+			}
+			while ( true ) {
+				m = str.match( reg );
+				if ( ! m ) break;
+				if ( m[ 2 ] ) {
+					if ( opened ) {
+						opened = false;
+						break;
+					} else {
+						opened = true;
+					}
+				}
+				result[ i + 1 ][ 1 ] = m[ 0 ] + result[ i + 1 ][ 1 ];
+				str = str.substr( 0, str.length - m[ 0 ].length );
+				result[ i ][ 1 ] = str;
+			}
+		}
+		// Return the result
+		return result;
 	}
 
 	/**

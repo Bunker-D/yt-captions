@@ -120,11 +120,14 @@ export async function fetchCaptions( url: string, msResolution: boolean = true )
 	const s = ( zeroes ) ? zeroes[ 0 ].length : 0;
 	const n = ( msResolution ) ? undefined : 8 - s;
 	let space = false;
-	for ( let i = text.length - 1; i >= 0; i-- ) {
+	for ( let i = text.length; i--; ) {
 		text[ i ][ 0 ] = text[ i ][ 0 ].substr( s, n );
 		if ( space ) text[ i ][ 1 ] += " ";
 		space = text[ i ][ 1 ][ 0 ] === " ";
 		if ( space ) text[ i ][ 1 ] = text[ i ][ 1 ].substr( 1 );
+	}
+	for ( let i = text.length - 1; i--; ) {
+		// -
 	}
 	return text;
 }

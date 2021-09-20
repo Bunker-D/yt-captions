@@ -6,42 +6,9 @@
  * @returns {number[]} Corresponding locations (indices) in fromText (-1 when no match)
  */
 export default function matchIndices( fromText: string, toText: string, indices: number[] ): number[] {
-	console.log( fromText );
-	console.log( '\n' + '='.repeat( 150 ) + '\n' );
-	console.log( toText );
-
 	const res: number[] = [];
 	const [ fromCurated, a ] = curateStr( fromText ); // Curation: remove capital letters, accents, punctuation, excess spaces…
 	const [ toCurated, b ] = curateStr( toText );
-
-	// const log = ( text: string, curated: string, indices: [ number, number ][] ) => {
-	// 	let k = 0;
-	// 	let insert: [ number, number ][] = [];
-	// 	for ( const [ iCurated, iText ] of indices ) {
-	// 		insert.push( [ iCurated, iText - iCurated - k ] );
-	// 		k = iText - iCurated;
-	// 	}
-	// 	insert.reverse();
-	// 	let matched = curated.replace( /\ /g, '·' );
-	// 	for ( const [ i, d ] of insert ) {
-	// 		matched = matched.substring( 0, i ) + '+'.repeat( d ) + matched.substring( i );
-	// 	}
-	// 	text = text.replace( /\ /g, '·' );
-	// 	let output: string[] = [];
-	// 	let i = 0;
-	// 	while ( true ) {
-	// 		k = text.indexOf( '·', i + 140 );
-	// 		if ( k < 0 ) break;
-	// 		output.push( text.substring( i, k ) + '\n' + matched.substring( i, k ) + '\n' );
-	// 		i = k;
-	// 	}
-	// 	output.push( text.substr( i ) + '\n' + matched.substr( i ) + '\n' );
-	// 	console.log( output.join( '\n' ) );
-	// }
-	// log( fromText, fromCurated, a );
-	// console.log( '\n' + '='.repeat( 150 ) + '\n' );
-	// log( toText, toCurated, b );
-
 	let ab!: [ number, number, number ][];
 	for ( const maxOffset of [ 400, 1000, 0 ] ) {
 		// To accelerate the computation in most cases, we first limit the considered offset, then extend if 93% matching target isn't reached.
