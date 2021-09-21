@@ -7,6 +7,38 @@
 	<link href="https://fonts.googleapis.com/css?family=Poppins:400,500&display=swap" rel="stylesheet">
 	@include('partials/common-style')
 	<style>
+		#menu {
+			position: fixed;
+			z-index: 90;
+			top: 16px;
+			left: 11px;
+			max-height: 270px;
+			transition: max-height .15s;
+			overflow: hidden;
+		}
+		#menu.menu-off { max-height: 53px; }
+		.menu-item {
+			cursor: pointer;
+			line-height: 0;
+			display: table;
+		}
+		.menu-item img {
+			width: 35px;
+			height: 35px;
+			margin: 9px;
+			background-color: white;
+		}
+		.menu-text {
+			display: table-cell;
+			vertical-align: middle;
+			margin: 0 9px;
+			max-width: 0;
+			transition: max-width .2s;
+			overflow: hidden;
+			background-color: white;
+		}
+		.menu-item:hover .menu-text { max-width: 12em; }
+
 		main {
 			max-width: 850px;
 			width: 80%;
@@ -72,6 +104,7 @@
 <body>
 
 <main>
+
 	<div class="head">
 		<img src="/yt-captions.png">
 		@!videoDescriptor( { id: id, title: title, channel: channel, date: date } )
@@ -89,6 +122,33 @@
 	</blockquote>
 	<div class="foot"></div>
 </main>
+
+<div id="menu" class="menu-off">
+	<div class="menu-item" id="burger">
+		<img src="/icons/burger.png">
+	</div>
+	<div class="menu-item">
+		<img src="/icons/ms-no.png">
+		<div class="menu-text">Switch&nbsp;time&nbsp;accuracy&nbsp;&nbsp;</div>
+	</div>
+	<div class="menu-item">
+		<img src="/icons/Script.png">
+		<div class="menu-text">Merge&nbsp;with&nbsp;script&nbsp;&nbsp;</div>
+	</div>
+	<div class="menu-item">
+		<img src="/icons/download.png">
+		<div class="menu-text">Save&nbsp;current&nbsp;state&nbsp;&nbsp;</div>
+	</div>
+	<div class="menu-item">
+		<img src="/icons/Export.png">
+		<div class="menu-text">Export&nbsp;subtitles&nbsp;&nbsp;</div>
+	</div>
+</div>
+
+<script>
+	const menu = document.getElementById( 'menu' );
+	document.getElementById( 'burger' ).onclick = () => menu.classList.toggle( 'menu-off' );
+</script>
 
 </body>
 </html>

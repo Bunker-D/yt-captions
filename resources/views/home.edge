@@ -17,6 +17,18 @@
 			right: 100%;
 			padding: 2px .9em 0 0;
 		}
+
+		#upload {
+			width: fit-content;
+			margin: 2.5em auto 0 auto;
+			cursor: pointer;
+		}
+		#upload img {
+			width: 45px;
+			margin: 0.1em auto;
+		}
+		#upload div { visibility: hidden; }
+		#upload:hover div { visibility: visible; }
 	</style>
 </head>
 <body>
@@ -35,6 +47,10 @@
 		<label for="v">Video:</label>
 		<input type="text" id="v" name="v">
 	</form>
+	<div id="upload">
+		<img src="/icons/upload.png">
+		<div>Load file</div>
+	</div>
 </div>
 </main>
 
