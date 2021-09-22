@@ -73,7 +73,7 @@
 		span[data-time]{
 			position: relative;
 		}
-		span[data-time]:hover::before {
+		span[data-time]:not(:first-child):hover::before {
 			content: '';
 			position: absolute;
 			bottom: calc( 100% + 4px );
@@ -84,7 +84,7 @@
 			-moz-transform: skew(0, 125deg);
 			transform: skew(0, 125deg);
 		}
-		span[data-time]:hover::after {
+		span[data-time]:not(:first-child):hover::after {
 			content: attr(data-time);
 			position: absolute;
 			bottom: calc( 100% + 4px );
@@ -99,6 +99,30 @@
 			white-space: nowrap;
 			font-size: .9em;
 		}
+		span[data-time]:first-child::after {
+			content: attr(data-time);
+			background-color: #dc0000;
+			color: white;
+			font-size: .8em;
+			padding: 0 0.4em;
+			margin-right: 0.9em;
+			border-radius: 6px;
+			position: absolute;
+			right: 100%;
+			top: 3px;
+		}
+		span[data-time]:first-child:hover::before {
+			content: '';
+			position: absolute;
+			bottom: 8px;
+			right: calc(100% + 0.6em);
+			background-color: #dc0000;
+			width: 0.7em;
+			height: 0.41em;
+			-webkit-transform: skew(60deg, -30deg);
+			-moz-transform: skew(60deg, -30deg);
+			transform: skew(60deg, -30deg);
+		}
 	</style>
 </head>
 <body>
@@ -110,7 +134,7 @@
 		@!videoDescriptor( { id: id, title: title, channel: channel, date: date } )
 	</div>
 
-	<blockquote contenteditable="true">
+	<blockquote id="captions" contenteditable="true">
 		<p>
 			@each( bit in text )~
 <span
@@ -127,27 +151,113 @@
 	<div class="menu-item" id="burger">
 		<img src="/icons/burger.png">
 	</div>
-	<div class="menu-item">
-		<img src="/icons/ms-no.png">
+	<div class="menu-item" onclick="msAccuracy()">
+		<img src="/icons/ms-yes.png" id="ms-img">
 		<div class="menu-text">Switch&nbsp;time&nbsp;accuracy&nbsp;&nbsp;</div>
 	</div>
-	<div class="menu-item">
+	<div class="menu-item" onclick="mergeWith()">
 		<img src="/icons/Script.png">
 		<div class="menu-text">Merge&nbsp;with&nbsp;script&nbsp;&nbsp;</div>
 	</div>
-	<div class="menu-item">
+	<div class="menu-item" onclick="saveCaptions()">
 		<img src="/icons/download.png">
 		<div class="menu-text">Save&nbsp;current&nbsp;state&nbsp;&nbsp;</div>
 	</div>
-	<div class="menu-item">
+	<div class="menu-item" onclick="exportCaptions()">
 		<img src="/icons/Export.png">
 		<div class="menu-text">Export&nbsp;subtitles&nbsp;&nbsp;</div>
 	</div>
+	{{-- //IMPROVE italic, bold, underlined, font color --}}
 </div>
 
 <script>
 	const menu = document.getElementById( 'menu' );
+	const captions = document.getElementById( 'captions' );
 	document.getElementById( 'burger' ).onclick = () => menu.classList.toggle( 'menu-off' );
+	function msAccuracy() {
+		const img = document.getElementById( 'ms-img' );
+		img.setAttribute( 'src',
+			( img.getAttribute( 'src' ) === '/icons/ms-no.png' )
+				? '/icons/ms-yes.png'
+				: '/icons/ms-no.png'
+		);
+		/*TODO function: ms accuracy */
+	}
+	function mergeWith() {
+		/*TODO function: merge with script */
+	}
+	function saveCaptions() {
+		const str = encodeCaptions( captionsTable() );
+		const filename = document.getElementById( 'video-title' ).textContent.replace( /[.\\/:*?"<>|]/g, '' ) + '.cpt';
+		const element = document.createElement( 'a' );
+		element.setAttribute( 'href', 'data:text/plain;charset=utf-8,' + encodeURIComponent( str ) );
+		element.setAttribute( 'download', filename );
+		element.style.display = 'none';
+		document.body.appendChild(element);
+		element.click();
+		document.body.removeChild(element);
+	}
+	function exportCaptions() {
+		/*TODO function: export subtitles */
+		//TODO <br> replaced by newline
+		//TODO format: only tolerate <i>, <u>, <b>
+	}
+
+	function captionsTable()/*: [string,string][][]*/ {
+		const res = [ [ [ '', '' ] ] ];
+		let currentPar = res[ 0 ];
+		let currentBit = currentPar[ 0 ];
+		const newPar = () => {
+			if ( currentPar.length ) {
+				currentPar = [];
+				res.push( currentPar );
+			}
+		};
+		const newBit = ( span ) => {
+			if ( ! span.textContent ) return;
+			try {
+				const t = span.getAttribute( 'data-time-ms' );
+				if ( t ) {
+					currentBit = [ t, span.innerHTML ];
+					currentPar.push( currentBit );
+				} else {
+					currentBit[ 1 ] += span.outerHTML;
+				}
+			} catch ( e ) {
+				currentBit[ 1 ] +=
+					span.textContent
+						.replace( '&', '&amp;' )
+						.replace( '<', '&lt;' )
+						.replace( '>', '&gt;' );
+			}
+		};
+		for ( const p of captions.childNodes ) {
+			if ( p.tagName === 'P' ) {
+				newPar();
+				for ( const span of p.childNodes ) {
+					newBit( span );
+				}
+			} else {
+				newBit( p );
+			}
+		}
+		if ( ! currentPar.length ) res.pop();
+		if ( res[ 0 ][ 0 ][ 1 ].trim() ) {
+			res[ 0 ][ 0 ][ 0 ] = ( res.length > 1 ) ? res[ 1 ][ 0 ][ 0 ].replace( /\d/g, '0' ) : '00:00.000';
+		} else {
+			res.splice( 0 , 1 );
+		}
+		return res;
+	}
+	function encodeCaptions( captions/*: [string,string][][]*/ )/*: string*/ {
+		return (
+			captions.map( ( paragraph ) =>
+				paragraph.map( ( [ t, w ] ) =>
+					'{' + t + '}' + w.replace( /{(\/*[\d:.]+)}/g, ( _, w ) => '{/' + w + '}' )
+				).join( '' )
+			).join( '{:}' )
+		);
+	}
 </script>
 
 </body>

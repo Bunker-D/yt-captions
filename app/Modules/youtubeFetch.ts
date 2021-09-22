@@ -199,7 +199,7 @@ function replaceHtmlAmp( str: string ): string {
 		if ( n ) return String.fromCharCode( Number( n ) );
 		n = m.toLowerCase();
 		// Most expected characters
-		let c = { nbsp: ' ', quot: '"', apos: "'", amp: '&', lt: '<', gt: '>' }[ n ];
+		let c = { nbsp: ' ', quot: '"', apos: "'", amp: '&', lt: '<', gt: '>' }[ n ]; //TODO Don't replace <, > and & (i.e. put back &lt;, &gt; and &amp; there).
 		if ( c ) return c;
 		// Other case-insentive characters
 		c = {
@@ -224,3 +224,14 @@ function replaceHtmlAmp( str: string ): string {
 		return x;
 	} );
 }
+/*TODO replaceHtmlAmp: Should remove most HTML tags (especially unsafe ones).
+	<br>, <i>, <b>, <u>, <font +attributes> should be kept.
+	<em> and <strong> should be converted to <i> and <b>.
+	<, > and & should be protected.
+*/
+/*TODO Curration when matching should replace <, >, & and remove html tags
+	/!\ Macthing could break formatting. It must then be spread across bits.
+	/!\ When exporting to srt, formatting tags should be merged back when relevant (i.e. "<i>in </i><i>italic</i>" → "<i>in italic</i>")
+*/
+/*TODO Writing the captions in the GUI should allow for valid html tags
+*/
