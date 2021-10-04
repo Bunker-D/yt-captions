@@ -9,6 +9,7 @@ import Route from '@ioc:Adonis/Core/Route';
 
 //HACK  test route — to be deleted
 Route.get( '/test', 'CaptionsController.test' );
+Route.post( '/convert/srt', 'CaptionsController.exportSrt' );
 
 // Home page
 Route.get( '/', async ( { view } ) => view.render( 'home' ) );

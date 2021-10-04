@@ -1,5 +1,6 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
 import { ViewRendererContract } from '@ioc:Adonis/Core/View';
+import { schema, rules } from '@ioc:Adonis/Core/Validator';
 import matchTextsIndices from 'App/Modules/matchTextsIndices';
 import {
 	fetchVideo as ytFetchVideo,
@@ -18,6 +19,9 @@ export default class CaptionsController {
 		// return view.render( 'captions', data );
 	}
 
+	/**
+	 * PAGE REQUEST:  Handle requests using the full youtube url and redirect to the video id
+	 */
 	public async urlParse( { request, response, view }: HttpContextContract ): Promise<void | string> {
 		// Verify it is a youtube url
 		if ( ! request.url().match( /^\/(https?:\/\/)?(www.)?youtube.com\/watch$/i ) ) {
@@ -27,6 +31,9 @@ export default class CaptionsController {
 		return response.redirect( '/' + request.input( 'v' ) );
 	}
 
+	/**
+	 * PAGE REQUEST:  Create the page for a given video
+	 */
 	public async fetchVideo( { params, view }: HttpContextContract ): Promise<void | string> {
 		try {
 			const data: ytData = await ytFetchVideo( params.id );
@@ -37,6 +44,9 @@ export default class CaptionsController {
 		}
 	}
 
+	/**
+	 * PAGE REQUEST:  Create the page for a given video and captions track
+	 */
 	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
 		let reqData = request.body();
 		let urls: string[];
@@ -137,7 +147,7 @@ export default class CaptionsController {
 	 * @param text Text of the captions to create
 	 * @returns {[string,string][]} Created captions
 	 */
-	private static retextCaptions( captions: [ string, string ][], text: string ) {
+	private static retextCaptions( captions: [ string, string ][], text: string ): [string,string][] {
 		// Build the indices of where timings apply in original captions
 		let indices: number[] = [];
 		let i = 0;
@@ -219,6 +229,60 @@ export default class CaptionsController {
 			return view.render( 'home', { error: 'Something went wrong.', errorDetails: '' + error } );
 		}
 	}
+
+	/**
+	 * STRING REQUEST:  Handle the conversion into a srt file
+	 * The request must have a captions field, in the format [ [ [time,text], [time,text], … ], … ].
+	 * Each element of the main list correspond to a subtitle.
+	 * Times are assumed to be of format `HH:MM:SS.mmm`, `H:MM:SS.mmm`, `MM:SS.mmm`, or `M:SS.mmm`.
+	 */
+	public async exportSrt( { request, response }: HttpContextContract ): Promise<void> {
+		console.log( request.body() );
+		const captions: string[][][] = ( await request.validate(
+			{
+				schema: schema.create( { captions: schema.array().members( schema.array().members( schema.array( [ rules.minLength( 2 ) ] ).members( schema.string() ) ) ) } )
+			} ) ).captions;
+		let k = captions[ 0 ][ 0 ][ 0 ].length;
+		const prefix = '\n' + ( '00:00:00'.substr( 0, 12 - k ) );
+		const commaIdx = k - 4;
+		const toSec: ( s: string ) => number =
+			( k === 12 ) ? ( ( s ) => Number( s.substr( 0, 2 ) ) * 3600 + Number( s.substr( 3, 2 ) ) * 60 + Number( s.substr( 6 ) ) )
+				: ( k === 11 ) ? ( ( s ) => Number( s[ 0 ] ) * 3600 + Number( s.substr( 2, 2 ) ) * 60 + Number( s.substr( 5 ) ) )
+				: ( k === 9 ) ? ( ( s ) => Number( s.substr( 0, 2 ) ) * 60 + Number( s.substr( 3 ) ) )
+				: ( k === 8 ) ? ( ( s ) => Number( s[ 0 ] ) * 60 + Number( s.substr( 2 ) ) )
+				: Number;
+		const d2: ( n: number ) => string = ( n ) => ( n < 10 ) ? ( '0' + String( n ) ) : String( n );
+		const toStr: ( t: number ) => string = ( t ) => {
+			t *= 1000;
+			let s = '';
+			if ( t >= 3600000 ) { s = d2( Math.floor( t / 3600000 ) ) + ':'; t %= 3600000; } else { s = '00:'; }
+			if ( t >= 60000) { s += d2( Math.floor( t / 60000 ) ) + ':'; t %= 60000; } else { s += '00:'; }
+			if ( t >= 1000 ) { s += d2( Math.floor( t / 1000 ) ) + ','; t %= 1000; } else { s += '00,'; }
+			return s + ( ( t < 100 ) ? ( ( t < 10 ) ? '00' : '0' ) + String( t ) : String( t ) );
+		};
+		const timeWords: ( w: string ) => number = ( w ) => {
+			const m = w.normalize( 'NFD' ).replace( /['\u0300-\u036f]/g, '' ).match( /\w+/g );
+			return ( m ) ? ( 0.7 * m.length + 0.3 ) : 0;
+		}
+		let srt = '';
+		k = 1;
+		let tStart = '', tStart_ = '', tEnd = 0, text = '';
+		for ( const paragraph of captions ) {
+			tStart_ = paragraph[ 0 ][ 0 ];
+			if ( text ) {
+				srt += ( k++ ) + prefix + tStart.substr( 0, commaIdx ) + ',' + tStart.substr( commaIdx + 1 ) + ' --> ' + ( ( toSec( tStart_ ) < tEnd ) ? tStart_ : toStr( tEnd ) ) + '\n' + text + '\n\n';
+			}
+			tStart = tStart_;
+			tEnd = toSec( paragraph[ paragraph.length - 1 ][ 0 ] ) + timeWords( paragraph[ paragraph.length - 1 ][ 1 ] );
+			text =
+				paragraph.map( ( w ) => w[ 1 ] ).join( '' )
+					.replace( /<br>/, '\n' )  // Replace line breaks
+					.replace( /<(?!\/?[ibu]>)/g, '&lt;' )  // Replace all "<" by "&lt;" except for <i>, <b> and <u> tags
+					.replace( /<\/(?<tag>[ibu])><\k<tag>>/g, '' );  // Merge successive <i>, <b> or <u> tags
+			//IMPROVE  Handle <font …> tags
+		}
+		return response.send( srt );
+	}
 }
 
 
@@ -227,11 +291,4 @@ export default class CaptionsController {
 /*TODO  Export button: Export to .srt
 */
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
-*/
-
-/*BUG Unwanted spaces when syncing
-	Example: C4WbCwF6yh0
-	→ Spaces inserted after “"”
-	→ Space inserted at the end after the M of “[Musique]”
-	→ “%” → “% d d”
 */

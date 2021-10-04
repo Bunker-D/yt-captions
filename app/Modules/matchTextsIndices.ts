@@ -177,7 +177,8 @@ function longestMatch( a: string, b: string, maxOffset: number ): [number,number
  * @param {string} str String to clean
  * @returns {[string,[number,number][]]} [ Clean string, list if indices correspondances as [index in output, index in input] ]
  */
- function curateStr( str: string ): [string,[number,number][]] {
+function curateStr( str: string ): [string,[number,number][]] {
+	//TODO Also remove <i>, <b>, <u>, <font …>, </i>, </b>, </u>, </font>, <br>  +  convert remaining &…; (&lt;, &amp;)
 	let d: number = 0; // Keeps track of the index difference between input and output strings
 	let dUpdate: boolean = true;
 	let iMap: [number,number][] = []; // Indices map

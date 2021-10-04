@@ -172,7 +172,6 @@
 
 <script>
 	const menu = document.getElementById( 'menu' );
-	const captions = document.getElementById( 'captions' );
 	document.getElementById( 'burger' ).onclick = () => menu.classList.toggle( 'menu-off' );
 	function msAccuracy() {
 		const img = document.getElementById( 'ms-img' );
@@ -200,10 +199,29 @@
 	function exportCaptions() {
 		/*TODO function: export subtitles */
 		//TODO <br> replaced by newline
-		//TODO format: only tolerate <i>, <u>, <b>
+		//TODO format: only tolerate <i>, <u>, <b>, merge those who should be
+			let xmlHttp = new XMLHttpRequest();
+			xmlHttp.onreadystatechange = function() { 
+				if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) {
+					console.log( xmlHttp.responseText );
+				}
+			}
+			xmlHttp.open( 'POST', '/convert/srt', true );
+			xmlHttp.setRequestHeader( "Content-Type", "application/json" );
+			xmlHttp.send( JSON.stringify( { captions: captionsTable() } ) );
 	}
-
+	/**
+	 * Convert the current captions state into an array of paragraphs,
+	 * that are described as an array of timed bits, being described as [time,text].
+	 */
 	function captionsTable()/*: [string,string][][]*/ {
+		/*TODO First clean:
+			Remove unwanted nbsp's at the beginning and end of HTML elements (replace by normal spaces).
+			Place spaces by nbsp's before/after relevant characters (?!:;«»).
+			Remove unwanted HTML tags: only timed span and <i>, <b>, <u>, <br>  // and font (with attributes) are ok.
+			Move <i>, <b> and <u> tags inside the spans if need be.
+		*/
+		const captions = document.getElementById( 'captions' );
 		const res = [ [ [ '', '' ] ] ];
 		let currentPar = res[ 0 ];
 		let currentBit = currentPar[ 0 ];
@@ -226,9 +244,9 @@
 			} catch ( e ) {
 				currentBit[ 1 ] +=
 					span.textContent
-						.replace( '&', '&amp;' )
-						.replace( '<', '&lt;' )
-						.replace( '>', '&gt;' );
+						.replaceAll( '&', '&amp;' )
+						.replaceAll( '<', '&lt;' )
+						.replaceAll( '>', '&gt;' );
 			}
 		};
 		for ( const p of captions.childNodes ) {
@@ -243,12 +261,13 @@
 		}
 		if ( ! currentPar.length ) res.pop();
 		if ( res[ 0 ][ 0 ][ 1 ].trim() ) {
-			res[ 0 ][ 0 ][ 0 ] = ( res.length > 1 ) ? res[ 1 ][ 0 ][ 0 ].replace( /\d/g, '0' ) : '00:00.000';
+			res[ 0 ][ 0 ][ 0 ] = ( res.length > 1 ) ? res[ 1 ][ 0 ][ 0 ].replace( /\d/g, '0' ) : '00:00:00.000';
 		} else {
 			res.splice( 0 , 1 );
 		}
 		return res;
 	}
+	// Convert a captions-describing array into a captions-describing string
 	function encodeCaptions( captions/*: [string,string][][]*/ )/*: string*/ {
 		return (
 			captions.map( ( paragraph ) =>
@@ -257,6 +276,10 @@
 				).join( '' )
 			).join( '{:}' )
 		);
+	}
+	// Convert a captions-describing string into a captions-describing array
+	function cleanTags( str/*: string*/ )/*: string*/ {
+
 	}
 </script>
 
