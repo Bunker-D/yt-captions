@@ -124,6 +124,7 @@
 			transform: skew(60deg, -30deg);
 		}
 	</style>
+	{{-- //BUG using "span[data-time]:first-child" is problematic when spans end up within a formatting tag (e.g. <b>…</b>) --}}
 </head>
 <body>
 
@@ -172,6 +173,7 @@
 
 <script>
 	const menu = document.getElementById( 'menu' );
+	const captions = document.getElementById( 'captions' );
 	document.getElementById( 'burger' ).onclick = () => menu.classList.toggle( 'menu-off' );
 	function msAccuracy() {
 		const img = document.getElementById( 'ms-img' );
@@ -186,42 +188,37 @@
 		/*TODO function: merge with script */
 	}
 	function saveCaptions() {
-		const str = encodeCaptions( captionsTable() );
-		const filename = document.getElementById( 'video-title' ).textContent.replace( /[.\\/:*?"<>|]/g, '' ) + '.cpt';
-		const element = document.createElement( 'a' );
-		element.setAttribute( 'href', 'data:text/plain;charset=utf-8,' + encodeURIComponent( str ) );
-		element.setAttribute( 'download', filename );
-		element.style.display = 'none';
-		document.body.appendChild(element);
-		element.click();
-		document.body.removeChild(element);
+		fileFromServer( '/convert/save', '.cpt' );
 	}
 	function exportCaptions() {
-		/*TODO function: export subtitles */
-		//TODO <br> replaced by newline
-		//TODO format: only tolerate <i>, <u>, <b>, merge those who should be
-			let xmlHttp = new XMLHttpRequest();
-			xmlHttp.onreadystatechange = function() { 
-				if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) {
-					console.log( xmlHttp.responseText );
-				}
-			}
-			xmlHttp.open( 'POST', '/convert/srt', true );
-			xmlHttp.setRequestHeader( "Content-Type", "application/json" );
-			xmlHttp.send( JSON.stringify( { captions: captionsTable() } ) );
+		fileFromServer( '/convert/srt', '.srt' );
 	}
+	function fileFromServer( requestURL, fileExtension ) {
+		let xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function() { 
+			if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) {
+				console.log( xmlHttp.responseText ); //HACK
+				const filename = document.getElementById( 'video-title' ).textContent.replace( /[.\\/:*?"<>|]/g, '' ) + fileExtension;
+				const element = document.createElement( 'a' );
+				element.setAttribute( 'href', 'data:text/plain;charset=utf-8,' + encodeURIComponent( xmlHttp.responseText ) );
+				element.setAttribute( 'download', filename );
+				element.style.display = 'none';
+				document.body.appendChild(element);
+				element.click();
+				document.body.removeChild(element);
+			}
+		}
+		xmlHttp.open( 'POST', requestURL, true );
+		xmlHttp.setRequestHeader( "Content-Type", "application/json" );
+		xmlHttp.send( JSON.stringify( { captions: captionsTable() } ) );
+	}
+
 	/**
 	 * Convert the current captions state into an array of paragraphs,
 	 * that are described as an array of timed bits, being described as [time,text].
 	 */
 	function captionsTable()/*: [string,string][][]*/ {
-		/*TODO First clean:
-			Remove unwanted nbsp's at the beginning and end of HTML elements (replace by normal spaces).
-			Place spaces by nbsp's before/after relevant characters (?!:;«»).
-			Remove unwanted HTML tags: only timed span and <i>, <b>, <u>, <br>  // and font (with attributes) are ok.
-			Move <i>, <b> and <u> tags inside the spans if need be.
-		*/
-		const captions = document.getElementById( 'captions' );
+		cleanEditor();
 		const res = [ [ [ '', '' ] ] ];
 		let currentPar = res[ 0 ];
 		let currentBit = currentPar[ 0 ];
@@ -241,7 +238,7 @@
 				} else {
 					currentBit[ 1 ] += span.outerHTML;
 				}
-			} catch ( e ) {
+			} catch ( e ) { //TODO Recursivity to handle surrounding format tags
 				currentBit[ 1 ] +=
 					span.textContent
 						.replaceAll( '&', '&amp;' )
@@ -277,9 +274,9 @@
 			).join( '{:}' )
 		);
 	}
-	// Convert a captions-describing string into a captions-describing array
-	function cleanTags( str/*: string*/ )/*: string*/ {
-
+	// Remove unnecessary nbsp's, remove unsupported HTML tags, put French-typography-related nbsp's
+	function cleanEditor() {
+		//TODO  cleanEditor()
 	}
 </script>
 

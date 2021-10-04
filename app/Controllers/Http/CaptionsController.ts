@@ -1,4 +1,5 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext';
+import { RequestContract } from '@ioc:Adonis/Core/Request';
 import { ViewRendererContract } from '@ioc:Adonis/Core/View';
 import { schema, rules } from '@ioc:Adonis/Core/Validator';
 import matchTextsIndices from 'App/Modules/matchTextsIndices';
@@ -232,16 +233,10 @@ export default class CaptionsController {
 
 	/**
 	 * STRING REQUEST:  Handle the conversion into a srt file
-	 * The request must have a captions field, in the format [ [ [time,text], [time,text], … ], … ].
-	 * Each element of the main list correspond to a subtitle.
-	 * Times are assumed to be of format `HH:MM:SS.mmm`, `H:MM:SS.mmm`, `MM:SS.mmm`, or `M:SS.mmm`.
+	 * (See captionsFromRequest() for information about the request formatting.)
 	 */
 	public async exportSrt( { request, response }: HttpContextContract ): Promise<void> {
-		console.log( request.body() );
-		const captions: string[][][] = ( await request.validate(
-			{
-				schema: schema.create( { captions: schema.array().members( schema.array().members( schema.array( [ rules.minLength( 2 ) ] ).members( schema.string() ) ) ) } )
-			} ) ).captions;
+		const captions: [ string, string ][][] = await CaptionsController.captionsFromRequest( request );
 		let k = captions[ 0 ][ 0 ][ 0 ].length;
 		const prefix = '\n' + ( '00:00:00'.substr( 0, 12 - k ) );
 		const commaIdx = k - 4;
@@ -282,6 +277,37 @@ export default class CaptionsController {
 			//IMPROVE  Handle <font …> tags
 		}
 		return response.send( srt );
+	}
+
+	/**
+	 * STRING REQUEST:  Create a save file
+	 * (See captionsFromRequest() for information about the request formatting.)
+	 */
+	public async exportSave( { request, response }: HttpContextContract ): Promise<void> {
+		const captions: [ string, string ][][] = await CaptionsController.captionsFromRequest( request );
+		return response.send(
+			captions.map( ( paragraph ) =>
+				paragraph.map( ( [ t, w ] ) =>
+					'{' + t + '}' + w.replace( /{(\/*[\d:.]+)}/g, ( _, w ) => '{/' + w + '}' )
+				).join( '' )
+			).join( '{:}' )
+		);
+	}
+
+	/**
+	 * Get the captions-describing table from a request.
+	 * The request must have a captions field, in the format [ [ [time,text], [time,text], … ], … ].
+	 * Each element of the main list correspond to a subtitle.
+	 * Times are assumed to be of format `HH:MM:SS.mmm`, `H:MM:SS.mmm`, `MM:SS.mmm`, or `M:SS.mmm`.
+	 * @param request Request to get the data from
+	 * @returns Captions-describing table in the format [ [ [time,text], [time,text], … ], … ].
+	 */
+	private static async captionsFromRequest( request: RequestContract ): Promise<[string,string][][]> {
+		return (
+			( await request.validate( {
+				schema: schema.create( { captions: schema.array().members( schema.array().members( schema.array( [ rules.minLength( 2 ) ] ).members( schema.string() ) ) ) } )
+			} ) ).captions.map( ( p ) => p.map( ( b ) => [ b[ 0 ], b[ 1 ] ] ) )
+		);
 	}
 }
 
