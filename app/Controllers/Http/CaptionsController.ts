@@ -237,6 +237,7 @@ export default class CaptionsController {
 	 */
 	public async exportSrt( { request, response }: HttpContextContract ): Promise<void> {
 		const captions: [ string, string ][][] = await CaptionsController.captionsFromRequest( request );
+		console.log( captions );
 		let k = captions[ 0 ][ 0 ][ 0 ].length;
 		const prefix = '\n' + ( '00:00:00'.substr( 0, 12 - k ) );
 		const commaIdx = k - 4;
@@ -274,8 +275,9 @@ export default class CaptionsController {
 					.replace( /<br>/, '\n' )  // Replace line breaks
 					.replace( /<(?!\/?[ibu]>)/g, '&lt;' )  // Replace all "<" by "&lt;" except for <i>, <b> and <u> tags
 					.replace( /<\/(?<tag>[ibu])><\k<tag>>/g, '' );  // Merge successive <i>, <b> or <u> tags
-			//IMPROVE  Handle <font …> tags
+			//IMPROVE Support <font …> tags
 		}
+		srt += ( k++ ) + prefix + tStart.substr( 0, commaIdx ) + ',' + tStart.substr( commaIdx + 1 ) + ' --> ' + toStr( tEnd ) + '\n' + text + '\n';
 		return response.send( srt );
 	}
 

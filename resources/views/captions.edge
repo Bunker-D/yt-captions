@@ -230,20 +230,25 @@
 		};
 		const newBit = ( span ) => {
 			if ( ! span.textContent ) return;
+			let t;
 			try {
-				const t = span.getAttribute( 'data-time-ms' );
-				if ( t ) {
-					currentBit = [ t, span.innerHTML ];
-					currentPar.push( currentBit );
-				} else {
-					currentBit[ 1 ] += span.outerHTML;
+				t = span.getAttribute( 'data-time-ms' );
+			} catch ( e ) { // Text node
+				currentBit[ 1 ] += span.textContent.replaceAll( '&', '&amp;' ).replaceAll( '<', '&lt;' );
+			}
+			if ( t ) { // Timed span
+				currentBit = [ t, span.innerHTML ];
+				currentPar.push( currentBit );
+			} else { // HTML tag, but not a timed span
+				const tag = [ '', 'i', 'b', 'u' ][ [ 'I', 'B', 'U' ].indexOf( span.tagName ) + 1 ];
+				const start = currentPar.length;
+				for ( const subspan of span.childNodes ) {
+					newBit( subspan );
 				}
-			} catch ( e ) { //TODO Recursivity to handle surrounding format tags
-				currentBit[ 1 ] +=
-					span.textContent
-						.replaceAll( '&', '&amp;' )
-						.replaceAll( '<', '&lt;' )
-						.replaceAll( '>', '&gt;' );
+				if ( tag && currentPar.length > start ) {
+					currentPar[ start ][ 1 ] = '<' + tag + '>' + currentPar[ start ][ 1 ];
+					currentBit[ 1 ] += '</' + tag + '>';
+				}
 			}
 		};
 		for ( const p of captions.childNodes ) {
