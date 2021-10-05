@@ -73,7 +73,7 @@
 		span[data-time]{
 			position: relative;
 		}
-		span[data-time]:not(:first-child):hover::before {
+		span[data-time]:hover::before {
 			content: '';
 			position: absolute;
 			bottom: calc( 100% + 4px );
@@ -84,34 +84,44 @@
 			-moz-transform: skew(0, 125deg);
 			transform: skew(0, 125deg);
 		}
-		span[data-time]:not(:first-child):hover::after {
+		span[data-time]:hover::after {
 			content: attr(data-time);
+			font-weight: bold;
 			position: absolute;
 			bottom: calc( 100% + 4px );
 			left: 0;
 			background-color: #dc0000;
 			color: white;
-			font-weight: bold;
+			font-size: .9em;
 			line-height: 1em;
 			padding: 5px 7px;
 			border-radius: 4px;
 			display: inline-block;
 			white-space: nowrap;
-			font-size: .9em;
 		}
-		span[data-time]:first-child::after {
+		p > span[data-time]:first-child::after,
+		p > :first-child > span[data-time]:first-child::after,
+		p > :first-child > :first-child > span[data-time]:first-child::after,
+		p > :first-child > :first-child > :first-child > span[data-time]:first-child::after {
 			content: attr(data-time);
+			font-weight: normal;
+			position: absolute;
+			bottom: unset;
+			left: unset;
+			right: 100%;
+			top: 3px;
 			background-color: #dc0000;
 			color: white;
 			font-size: .8em;
+			line-height: unset;
 			padding: 0 0.4em;
-			margin-right: 0.9em;
 			border-radius: 6px;
-			position: absolute;
-			right: 100%;
-			top: 3px;
+			margin-right: 0.9em;
 		}
-		span[data-time]:first-child:hover::before {
+		p > span[data-time]:first-child:hover::before,
+		p > :first-child > span[data-time]:first-child:hover::before,
+		p > :first-child > :first-child > span[data-time]:first-child:hover::before,
+		p > :first-child > :first-child > :first-child > span[data-time]:first-child:hover::before {
 			content: '';
 			position: absolute;
 			bottom: 8px;
@@ -124,9 +134,19 @@
 			transform: skew(60deg, -30deg);
 		}
 	</style>
-	{{-- //BUG using "span[data-time]:first-child" is problematic when spans end up within a formatting tag (e.g. <b>…</b>) --}}
 </head>
 <body>
+
+	<p><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">and </span><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">again.</span></p>
+	<p><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">and </span><i><span data-time="1">Foo </span><span data-time="2">bar </span></i><span data-time="3">again.</span></p>
+	<p><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">and </span><i><b><span data-time="1">Foo </span><span data-time="2">bar </span></b></i><span data-time="3">again.</span></p>
+	<p><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">and </span><i><b><u><span data-time="1">Foo </span><span data-time="2">bar </span></u></b></i><span data-time="3">again.</span></p>
+	<p><i><span data-time="1">Foo </span><span data-time="2">bar </span></i><span data-time="3">and </span><i><span data-time="1">Foo </span><span data-time="2">bar </span></i><span data-time="3">again.</span></p>
+	<p><i><b><span data-time="1">Foo </span><span data-time="2">bar </span></b></i><span data-time="3">and </span><i><b><span data-time="1">Foo </span><span data-time="2">bar </span></b></i><span data-time="3">again.</span></p>
+	<p><i><b><u><span data-time="1">Foo </span><span data-time="2">bar </span></u></b></i><span data-time="3">and </span><i><b><u><span data-time="1">Foo </span><span data-time="2">bar </span></u></b></i><span data-time="3">again.</span></p>
+	<p><i><span data-time="1">Foo </span><b><span data-time="2">bar </span></b></i><span data-time="3">and </span><i><span data-time="1">Foo </span><b><span data-time="2">bar </span></b></i><span data-time="3">again.</span></p>
+	<p><i><b><span data-time="1">Foo </span></u><span data-time="2">bar </span></u></b></i><span data-time="3">and </span><i><b><span data-time="1">Foo </span></u><span data-time="2">bar </span></u></b></i><span data-time="3">again.</span></p>
+	
 
 <main>
 
@@ -279,7 +299,7 @@
 			).join( '{:}' )
 		);
 	}
-	// Remove unnecessary nbsp's, remove unsupported HTML tags, put French-typography-related nbsp's
+	// Remove empty spans, remove unnecessary nbsp's, remove unsupported HTML tags, put French-typography-related nbsp's
 	function cleanEditor() {
 		//TODO  cleanEditor()
 	}
