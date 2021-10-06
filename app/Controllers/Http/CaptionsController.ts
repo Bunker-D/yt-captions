@@ -325,9 +325,7 @@ export default class CaptionsController {
 }
 
 
-/*TODO  Save and Load capabilities
-*/
-/*TODO  Export button: Export to .srt
+/*TODO  Load capabilities
 */
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
 */

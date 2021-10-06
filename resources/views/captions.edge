@@ -191,10 +191,10 @@
 				? '/icons/ms-yes.png'
 				: '/icons/ms-no.png'
 		);
-		/*TODO function: ms accuracy */
+		//TODO function: ms accuracy
 	}
 	function mergeWith() {
-		/*TODO function: merge with script */
+		//TODO function: merge with script
 	}
 	function saveCaptions() {
 		fileFromServer( '/convert/save', '.cpt' );
@@ -206,7 +206,6 @@
 		let xmlHttp = new XMLHttpRequest();
 		xmlHttp.onreadystatechange = function() { 
 			if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) {
-				console.log( xmlHttp.responseText ); //HACK
 				const filename = document.getElementById( 'video-title' ).textContent.replace( /[.\\/:*?"<>|]/g, '' ) + fileExtension;
 				const element = document.createElement( 'a' );
 				element.setAttribute( 'href', 'data:text/plain;charset=utf-8,' + encodeURIComponent( xmlHttp.responseText ) );

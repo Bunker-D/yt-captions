@@ -8,33 +8,41 @@
 	@include('partials/common-style')
 	@include('partials/search-style')
 	<style>
-		input {
+		#search input {
 			width: calc( 100% - 1.8em - 3px );
 		}
 
-		label {
+		#search label {
 			position: absolute;
 			right: 100%;
 			padding: 2px .9em 0 0;
 		}
 
-		#upload {
+		.bottom-btn {
 			width: fit-content;
 			margin: 2.5em auto 0 auto;
 			cursor: pointer;
 		}
-		#upload img {
+		.bottom-btn img {
 			width: 45px;
 			margin: 0.1em auto;
 		}
-		#upload div { visibility: hidden; }
-		#upload:hover div { visibility: visible; }
+		.bottom-btn div {
+			text-align: center;
+			visibility: hidden;
+		}
+		.bottom-btn:hover div { visibility: visible; }
+		.bottom-btn label { cursor: pointer; }
+		.bottom-btn input { display: none; }
+		#go { display: none; }
+		.some-input #go { display: block; }
+		.some-input #upload { display: none; }
 	</style>
 </head>
 <body>
 
 <main>
-<div>
+<div id="container">
 	<img src="/yt-captions.png">
 	@if( error )
 		<div class="error"
@@ -43,13 +51,22 @@
 			@endif
 		>{{ error }}</div>
 	@endif
-	<form class="middle" action="/prompt" method="GET">
+	<form id="search" class="middle" action="/prompt" method="GET">
 		<label for="v">Video:</label>
 		<input type="text" id="v" name="v">
 	</form>
-	<div id="upload">
-		<img src="/icons/upload.png">
+	<div id="upload" class="bottom-btn">
+		<label for="file-input">
+			<img src="/icons/upload.png">
+		</label>
+		<input id="file-input" type="file" />
 		<div>Load file</div>
+	</div>
+	<div id="go" class="bottom-btn">
+		<label>
+			<img src="/icons/video.png">
+		</label>
+		<div>Go</div>
 	</div>
 </div>
 </main>
@@ -57,6 +74,15 @@
 @if( error )
 	<script>window.history.pushState( {}, '', '/' );</script>
 @endif
+
+<script>
+	const topClassList = document.getElementById( 'container' ).classList;
+	document.getElementById( 'v' ).oninput = ( { target } ) => {
+		if ( target.value ) topClassList.add( 'some-input' );
+		else topClassList.remove( 'some-input' );
+	}
+	
+</script>
 
 </body>
 </html>
