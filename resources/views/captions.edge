@@ -137,17 +137,6 @@
 </head>
 <body>
 
-	<p><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">and </span><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">again.</span></p>
-	<p><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">and </span><i><span data-time="1">Foo </span><span data-time="2">bar </span></i><span data-time="3">again.</span></p>
-	<p><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">and </span><i><b><span data-time="1">Foo </span><span data-time="2">bar </span></b></i><span data-time="3">again.</span></p>
-	<p><span data-time="1">Foo </span><span data-time="2">bar </span><span data-time="3">and </span><i><b><u><span data-time="1">Foo </span><span data-time="2">bar </span></u></b></i><span data-time="3">again.</span></p>
-	<p><i><span data-time="1">Foo </span><span data-time="2">bar </span></i><span data-time="3">and </span><i><span data-time="1">Foo </span><span data-time="2">bar </span></i><span data-time="3">again.</span></p>
-	<p><i><b><span data-time="1">Foo </span><span data-time="2">bar </span></b></i><span data-time="3">and </span><i><b><span data-time="1">Foo </span><span data-time="2">bar </span></b></i><span data-time="3">again.</span></p>
-	<p><i><b><u><span data-time="1">Foo </span><span data-time="2">bar </span></u></b></i><span data-time="3">and </span><i><b><u><span data-time="1">Foo </span><span data-time="2">bar </span></u></b></i><span data-time="3">again.</span></p>
-	<p><i><span data-time="1">Foo </span><b><span data-time="2">bar </span></b></i><span data-time="3">and </span><i><span data-time="1">Foo </span><b><span data-time="2">bar </span></b></i><span data-time="3">again.</span></p>
-	<p><i><b><span data-time="1">Foo </span></u><span data-time="2">bar </span></u></b></i><span data-time="3">and </span><i><b><span data-time="1">Foo </span></u><span data-time="2">bar </span></u></b></i><span data-time="3">again.</span></p>
-	
-
 <main>
 
 	<div class="head">
@@ -278,7 +267,7 @@
 					newBit( span );
 				}
 			} else {
-				newBit( p );
+				if ( p.textContent.trim() ) newBit( p );
 			}
 		}
 		if ( ! currentPar.length ) res.pop();
@@ -301,7 +290,22 @@
 	}
 	// Remove empty spans, remove unnecessary nbsp's, remove unsupported HTML tags, put French-typography-related nbsp's
 	function cleanEditor() {
-		//TODO  cleanEditor()
+		const nbsp = String.fromCharCode( 160 );
+		const clean = ( el ) => {
+			if ( el.nodeType === 1 ) {
+				if ( ! el.textContent.trim() ) {
+					if ( el.tagName !== 'BR' ) el.remove();
+					return;
+				}
+				for ( const e of el.childNodes ) clean( e );
+			} else if ( el.nodeType === 3 ) {
+				let s = el.textContent;
+				if ( s[ 0 ] === nbsp ) s = ' ' + s.substr( 1 );
+				if ( s[ s.length - 1 ] === nbsp ) s = s.substr( 0, s.length - 1 ) + ' ';
+				el.textContent = s.replace( /(?<=[«({\[]) | (?=[»)}\]:;!?])/g, nbsp );
+			}
+		}
+		for ( const el of captions.childNodes ) clean( el );
 	}
 </script>
 

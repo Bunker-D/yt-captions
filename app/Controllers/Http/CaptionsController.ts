@@ -237,7 +237,6 @@ export default class CaptionsController {
 	 */
 	public async exportSrt( { request, response }: HttpContextContract ): Promise<void> {
 		const captions: [ string, string ][][] = await CaptionsController.captionsFromRequest( request );
-		console.log( captions );
 		let k = captions[ 0 ][ 0 ][ 0 ].length;
 		const prefix = '\n' + ( '00:00:00'.substr( 0, 12 - k ) );
 		const commaIdx = k - 4;
