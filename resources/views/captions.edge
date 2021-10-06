@@ -219,7 +219,21 @@
 		}
 		xmlHttp.open( 'POST', requestURL, true );
 		xmlHttp.setRequestHeader( "Content-Type", "application/json" );
-		xmlHttp.send( JSON.stringify( { captions: captionsTable() } ) );
+		const args = { captions: captionsTable() };
+		for ( const key of [ 'title', 'author', 'date' ] ) {
+			let value = document.getElementById( 'video-' + key );
+			if ( value ) {
+				value = value.textContent.trim();
+				if ( value.endsWith( ',' ) ) value = value.substr( 0, value.length - 1 ).trim();
+				if ( value ) args[ key ] = value;
+			}
+		}
+		let url = document.getElementById( 'video-descriptor' );
+		if ( url ) {
+			url = url.getAttribute( 'href' );
+			if ( url ) args.url = url;
+		}
+		xmlHttp.send( JSON.stringify( args ) );
 	}
 
 	/**

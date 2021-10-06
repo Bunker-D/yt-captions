@@ -286,7 +286,19 @@ export default class CaptionsController {
 	 */
 	public async exportSave( { request, response }: HttpContextContract ): Promise<void> {
 		const captions: [ string, string ][][] = await CaptionsController.captionsFromRequest( request );
+		const video = await request.validate( {
+			schema: schema.create( {
+				title: schema.string.optional( { escape: true, trim: true } ),
+				author: schema.string.optional( { escape: true, trim: true } ),
+				date: schema.string.optional( { escape: true, trim: true } ),
+				url: schema.string.optional( {}, [ rules.url() ] ),
+			} )
+		} );
 		return response.send(
+			( ( video.title ) ? ( '{T}' + video.title.replace( /{/g, '{/' ) ) : '' ) +
+			( ( video.author ) ? ( '{A}' + video.author.replace( /{/g, '{/' ) ) : '' ) +
+			( ( video.date ) ? ( '{D}' + video.date.replace( /{/g, '{/' ) ) : '' ) +
+			( ( video.url ) ? ( '{U}' + video.url.replace( /{/g, '{/' ) ) : '' ) +
 			captions.map( ( paragraph ) =>
 				paragraph.map( ( [ t, w ] ) =>
 					'{' + t + '}' + w.replace( /{(\/*[\d:.]+)}/g, ( _, w ) => '{/' + w + '}' )
