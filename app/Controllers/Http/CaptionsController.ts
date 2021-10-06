@@ -106,6 +106,15 @@ export default class CaptionsController {
 	}
 
 	/**
+	 * PAGE REQUEST:  Create the page for a given video and captions track
+	 */
+	public async loadFile( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
+		//TODO  loadFile
+		const content: String = ( await request.validate( { schema: schema.create( { content: schema.string() } ) } ) ).content;
+		response.send( 'LOAD:\n' + content );
+	}
+
+	/**
 	 * In an object, find the value corresponding to a language keyword, knowing that for example 'en' might be here as 'en-US'.
 	 * @param {Object.<string,string>} obj Object to explore
 	 * @param {string} lang Language to look for
@@ -324,8 +333,5 @@ export default class CaptionsController {
 	}
 }
 
-
-/*TODO  Load capabilities
-*/
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
 */

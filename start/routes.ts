@@ -20,6 +20,9 @@ Route.get( '/prompt', ( { request, response } ) => response.redirect( '/' + requ
 Route.post( '/convert/srt', 'CaptionsController.exportSrt' );
 Route.post( '/convert/save', 'CaptionsController.exportSave' );
 
+// Load file
+Route.post( '/load', 'CaptionsController.loadFile' );
+
 // Youtube url in the url
 Route.get( '/http:/*', 'CaptionsController.urlParse' );
 Route.get( '/https:/*', 'CaptionsController.urlParse' );

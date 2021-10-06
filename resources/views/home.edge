@@ -56,10 +56,10 @@
 		<input type="text" id="v" name="v">
 	</form>
 	<div id="upload" class="bottom-btn">
-		<label for="file-input">
+		<label for="file-upload">
 			<img src="/icons/upload.png">
 		</label>
-		<input id="file-input" type="file" />
+		<input id="file-upload" type="file" />
 		<div>Load file</div>
 	</div>
 	<div id="go" class="bottom-btn">
@@ -81,10 +81,27 @@
 		if ( target.value ) topClassList.add( 'some-input' );
 		else topClassList.remove( 'some-input' );
 	}
-	
+	document.getElementById( 'file-upload' ).onchange = ( { target } ) => {
+		if ( ! target.files.length ) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			const form = document.createElement( 'form' );
+			form.action = '/load';
+			form.method = 'POST';
+			content = document.createElement( 'input' );
+			content.type = 'hidden';
+			content.name = 'content';
+			content.value = reader.result;
+			form.appendChild( content );
+			document.body.appendChild( form );
+			form.submit();
+		}
+		reader.readAsText( target.files[ 0 ] );
+	}
+	document.getElementById( 'go' ).onclick = () => {
+		document.getElementById( 'search' ).submit();
+	}
 </script>
 
 </body>
 </html>
-
-{{-- //TODO Have an alternative button “GO” to the upload button, that toggles when something is in the field. --}}
