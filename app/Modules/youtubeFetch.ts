@@ -126,9 +126,6 @@ export async function fetchCaptions( url: string, msResolution: boolean = true )
 		space = text[ i ][ 1 ][ 0 ] === " ";
 		if ( space ) text[ i ][ 1 ] = text[ i ][ 1 ].substr( 1 );
 	}
-	for ( let i = text.length - 1; i--; ) {
-		// -
-	}
 	return text;
 }
 
@@ -224,6 +221,22 @@ function replaceHtmlAmp( str: string ): string {
 		return x;
 	} );
 }
+
+/**
+ * Read a srt or vtt file.
+ * @param {string} content Content of the file
+ * @param {string} [type] Type or file, i.e. 'vtt' or 'srt'. If not provided: automatically detected.
+ * @returns {[string,string][]} Content of the file as a list of [ time, words ]
+ */
+export function readSubFile( content: string, type?: string ): [ string, string ][] {
+	/*TODO readSubFile
+		fetchCaptions already does the work for vtt
+		vtt or srt should be detected if `type` isn't provided, as well as word-timed or not
+		code should be adapted to handle all those situations
+	*/
+	return [ [ '00:00:00.000', content ] ]; //HACK
+}
+
 /*TODO  <i>, <b>, <u> vs loading and matching:
 	When loading / reading a vtt file:
 		[ ] <br>, <i>, <b>, <u> should be kept.  (Future improvement: support for <font …>.)

@@ -141,18 +141,20 @@
 
 	<div class="head">
 		<img src="/yt-captions.png">
-		@!videoDescriptor( { id: id, title: title, channel: channel, date: date } )
+		@!videoDescriptor( { id, title, channel, date, url } )
 	</div>
 
 	<blockquote id="captions" contenteditable="true">
-		<p>
-			@each( bit in text )~
+		@each( par in text )~
+<p>
+			@each( bit in par )~
 <span
 	data-time="{{ bit[ 0 ].split( '.' )[ 0 ] }}"
 	data-time-ms="{{ bit[ 0 ] }}"
->{{ bit[ 1 ] }}</span>
+>{{{ bit[ 1 ] }}}</span>
 			@endeach~
-		</p>
+</p>
+		@endeach~
 	</blockquote>
 	<div class="foot"></div>
 </main>
@@ -290,16 +292,6 @@
 			res.splice( 0 , 1 );
 		}
 		return res;
-	}
-	// Convert a captions-describing array into a captions-describing string
-	function encodeCaptions( captions/*: [string,string][][]*/ )/*: string*/ {
-		return (
-			captions.map( ( paragraph ) =>
-				paragraph.map( ( [ t, w ] ) =>
-					'{' + t + '}' + w.replace( /{(\/*[\d:.]+)}/g, ( _, w ) => '{/' + w + '}' )
-				).join( '' )
-			).join( '{:}' )
-		);
 	}
 	// Remove empty spans, remove unnecessary nbsp's, remove unsupported HTML tags, put French-typography-related nbsp's
 	function cleanEditor() {

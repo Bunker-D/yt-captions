@@ -38,7 +38,7 @@
 <div>
 	<img src="/yt-captions.png">
 	<div>
-		@!videoDescriptor( { id: id, title: title, channel: channel, date: date } )
+		@!videoDescriptor( { id, title, channel, date } )
 		@if( error )
 			<div class="error">{{ error }}</div>
 		@endif

@@ -1,11 +1,27 @@
-<a id="video-descriptor" target="_blank" href="https://www.youtube.com/watch?v={{ id }}"
+@set( 'link', url || ( ( id ) ? ( 'https://www.youtube.com/watch?v=' + id ) : '' ) )
+@if( link || title || channel || date )
+<{{{ ( link ) ? ( 'a target="_blank" href="' + link + '"' ) : 'div' }}}
+	id="video-descriptor"
 	style="text-decoration: none; color: inherit; display: block; width: 100%;"
 	class="video-descriptor"
 >
-	<h2 id="video-title">{{ title }}</h2>
-	<h3 style="display: block; width: 100%">
-		<span style="float: left" id="video-author">{{ channel }},&nbsp;&nbsp;&nbsp;</span>
-		<span style="float: right" id="video-date">{{ date }}</span>
-		<div style="display: block;clear: both"></div>
-	</h3>
-</a>
+	@if( title || channel || date )
+		@if( title )
+			<h2 id="video-title">{{ title }}</h2>
+		@endif
+		@if( channel || date )
+			@set( 'tag2', ( title ) ? '3' : '2' )
+			<h{{ tag2 }} style="display: block; width: 100%">
+				<span style="float: left" id="video-author">{{ channel || date }}
+					@if( channel && date )~
+,&nbsp;&nbsp;&nbsp;</span><span style="float: right" id="video-date">{{ date }}
+					@endif
+				</span>
+				<div style="display: block;clear: both"></div>
+			</h{{ tag2 }}>
+		@endif
+	@else
+		<h2>{{ id || url }}</h2>
+	@endif
+</{{ ( id ) ? 'a' : 'div' }}>
+@endif

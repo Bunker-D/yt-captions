@@ -6,6 +6,7 @@ import matchTextsIndices from 'App/Modules/matchTextsIndices';
 import {
 	fetchVideo as ytFetchVideo,
 	fetchCaptions as ytFetchCaptions,
+	readSubFile,
 	FetchError,
 	ytData,
 } from 'App/Modules/youtubeFetch';
@@ -57,7 +58,6 @@ export default class CaptionsController {
 			// Relevant data lacking (probably here from a GET), go fetch video data
 			//    Language shorthand conversion
 			let lang = params.lang;
-			//IMPROVE  Track id shorthands should be defined in some file
 			if ( lang === '0' ) lang = 'auto';
 			else if ( lang === '00' ) lang = 'mix';
 			//    Fetch the data
@@ -101,17 +101,74 @@ export default class CaptionsController {
 			channel: reqData.channel,
 			date: reqData.date,
 			id: reqData.id,
-			text: captions,
+			text: [ captions ],
 		} );
 	}
 
 	/**
 	 * PAGE REQUEST:  Create the page for a given video and captions track
 	 */
-	public async loadFile( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
-		//TODO  loadFile
-		const content: String = ( await request.validate( { schema: schema.create( { content: schema.string() } ) } ) ).content;
-		response.send( 'LOAD:\n' + content );
+	public async loadFile( { request, view }: HttpContextContract ): Promise<void | string> {
+		let content: string = ( await request.validate( { schema: schema.create( { content: schema.string() } ) } ) ).content.trim();
+		// Read the .cpt file
+		let video = {};
+		let captions: [ string, string ][][] = [];
+		let match: RegExpMatchArray | null = content.match( /{(\/)*([\d:.]+)}/ );
+		if ( match && ( match.index === 0 || ( content[ 0 ] === '{' && content[ 2 ] === '}' ) ) ) {
+			if ( match.index ) {
+				const map = { T: 'title', A: 'channel', D: 'date', U: 'url', I: 'id' };
+				const head = content.substr( 0, match.index );
+				for ( const m of head.matchAll( /{([A-Z])}((?:[^{]|{\/)+)/g ) ) {
+					if ( m[ 1 ] in map ) video[ map[ m[ 1 ] ] ] = m[ 2 ].replace( /{\//g, '{' );
+				}
+				content = content.substr( match.index );
+			}
+			let t: string = ''; // timing of the current timed bit (i.e. last timing met)
+			let i: number = 0; // start index of the current timed bit
+			let r: boolean = false; // some "{/…}" in the text of the bit to be replaced
+			let paragraph: [ string, string ][] = [];
+			const newPar = () => {
+				if ( paragraph.length ) {
+					captions.push( paragraph );
+					paragraph = [];
+				}
+			}
+			for ( const match of content.matchAll( /{(\/)*([\d:.]+)}/g ) ) {
+				if ( match.index === undefined ) continue;
+				if ( match[ 1 ] ) { // match is for "{/…}"
+					r = true;
+					continue;
+				}
+				if ( match.index > i ) {
+					let w = content.substring( i, match.index );
+					if ( r ) w = w.replace( /{\/(\/*[\d:.]+)}/g, ( _, w ) => '{' + w + '}' );
+					paragraph.push( [ t, w ] );
+				}
+				if ( match[ 2 ] === ':' ) { // match for "{:}" (i.e. new paragraph)
+					newPar();
+				} else {
+					t = match[ 2 ];
+				}
+				i = match.index + match[ 0 ].length;
+				r = false;
+			}
+			if ( t && i < content.length ) {
+				paragraph.push( [ t, content.substring( i ) ] );
+			}
+			newPar();
+		} else {
+			// If actually not a .cpt file, relegate the reading to another function
+			captions = [ readSubFile( content ) ];
+		}
+		// Safety: Only keep tolerated 
+		for ( const par of captions ) {
+			for ( const tw of par ) {
+				tw[ 0 ].replace( /</g, '' );
+				tw[ 1 ].replace( /&/g, '&amp;' ).replace( /<(?!\/?([iu]|br?)>)/gi, '&lt;' ); // # <font>
+			}
+		}
+		//
+		return view.render( 'captions', { text: captions, ...video } );
 	}
 
 	/**
@@ -283,7 +340,7 @@ export default class CaptionsController {
 					.replace( /<br>/, '\n' )  // Replace line breaks
 					.replace( /<(?!\/?[ibu]>)/g, '&lt;' )  // Replace all "<" by "&lt;" except for <i>, <b> and <u> tags
 					.replace( /<\/(?<tag>[ibu])><\k<tag>>/g, '' );  // Merge successive <i>, <b> or <u> tags
-			//IMPROVE Support <font …> tags
+			// # <font>
 		}
 		srt += ( k++ ) + prefix + tStart.substr( 0, commaIdx ) + ',' + tStart.substr( commaIdx + 1 ) + ' --> ' + toStr( tEnd ) + '\n' + text + '\n';
 		return response.send( srt );
@@ -332,6 +389,10 @@ export default class CaptionsController {
 		);
 	}
 }
+
+/*IMPROVE Support <font …> tags
+	→ Search for “# <font>” for relevant locations 
+*/
 
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
 */
