@@ -133,6 +133,17 @@
 			-moz-transform: skew(60deg, -30deg);
 			transform: skew(60deg, -30deg);
 		}
+
+		#ms-img-no { display: none; }
+		.ms-accuracy #ms-img-no { display: block; }
+		.ms-accuracy #ms-img-yes { display: none; }
+		.ms-accuracy span[data-time]:hover::after,
+		.ms-accuracy p > span[data-time]:first-child::after,
+		.ms-accuracy p > :first-child > span[data-time]:first-child::after,
+		.ms-accuracy p > :first-child > :first-child > span[data-time]:first-child::after,
+		.ms-accuracy p > :first-child > :first-child > :first-child > span[data-time]:first-child::after {
+			content: attr(data-time-ms);
+		}
 	</style>
 </head>
 <body>
@@ -164,7 +175,7 @@
 		<img src="/icons/burger.png">
 	</div>
 	<div class="menu-item" onclick="msAccuracy()">
-		<img src="/icons/ms-yes.png" id="ms-img">
+		<img src="/icons/ms-yes.png" id="ms-img-yes"><img src="/icons/ms-no.png" id="ms-img-no">
 		<div class="menu-text">Switch&nbsp;time&nbsp;accuracy&nbsp;&nbsp;</div>
 	</div>
 	<div class="menu-item" onclick="mergeWith()">
@@ -187,13 +198,7 @@
 	const captions = document.getElementById( 'captions' );
 	document.getElementById( 'burger' ).onclick = () => menu.classList.toggle( 'menu-off' );
 	function msAccuracy() {
-		const img = document.getElementById( 'ms-img' );
-		img.setAttribute( 'src',
-			( img.getAttribute( 'src' ) === '/icons/ms-no.png' )
-				? '/icons/ms-yes.png'
-				: '/icons/ms-no.png'
-		);
-		//TODO function: ms accuracy
+		document.body.classList.toggle( 'ms-accuracy' );
 	}
 	function mergeWith() {
 		//TODO function: merge with script

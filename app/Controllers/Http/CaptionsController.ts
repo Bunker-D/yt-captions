@@ -393,6 +393,5 @@ export default class CaptionsController {
 /*IMPROVE Support <font …> tags
 	→ Search for “# <font>” for relevant locations 
 */
-
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
 */
