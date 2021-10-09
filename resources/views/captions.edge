@@ -322,12 +322,47 @@
 		for ( const el of captions.childNodes ) clean( el );
 	}
 
-	// document.addEventListener('copy', function(e) {
-	// 	console.log('copied');
-	// 	e.clipboardData.setData('text/plain', 'Hello World!');
-	// 	e.preventDefault();
-	// });
-	//TODO Smart copy-paste
+	// let copyTime = true;
+	document.addEventListener('copy', function( e ) {
+		// Abort if invalid selection (i.e. not contained within the captions block)
+		const sel = window.getSelection();
+		if ( sel.rangeCount !== 1 ) return;
+		const range = sel.getRangeAt( 0 );
+		if ( ! ( captions.contains( range.startContainer ) && captions.contains( range.startContainer ) ) ) return;
+		// Copy the selection into a div to work on it
+		const clip = document.createElement( 'div' );
+		clip.append( range.cloneContents() )
+		// Add timings where needed
+		let noTime = true;
+		const timeTag = ( document.body.classList.contains( 'ms-accuracy' ) ) ? 'data-time-ms' : 'data-time';
+		const time = ( el ) => {
+			let t;
+			for ( const subel of el.children ) {
+				t = subel.getAttribute( timeTag );
+				if ( t ) break;
+			}
+			if ( t ) {
+				noTime = false;
+				el.innerHTML = '<code>' + t + ' - </code>' + el.innerHTML;
+			}
+		}
+		for ( const el of clip.children ) if ( el.tagName === 'P' ) time( el );
+		if ( noTime ) time( clip );
+		if ( noTime ) {
+			let el = sel.anchorNode;
+			let t;
+			do {
+				el = el.parentElement;
+				t = el.getAttribute( timeTag );
+			} while ( ! t )
+			if ( t ) clip.innerHTML = '<code>' + t + ' - </code>' + clip.innerHTML;
+		}
+		// Update the clipboard
+		e.clipboardData.setData( 'text/html', clip.innerHTML );
+		clip.remove();
+		e.preventDefault();
+	} );
+	//TODO For copy-paste within the page, a Ctrl+Shift+C copy should be defined removing the spans
 </script>
 
 </body>
