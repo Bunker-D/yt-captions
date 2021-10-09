@@ -196,6 +196,7 @@
 <script>
 	const menu = document.getElementById( 'menu' );
 	const captions = document.getElementById( 'captions' );
+
 	document.getElementById( 'burger' ).onclick = () => menu.classList.toggle( 'menu-off' );
 	function msAccuracy() {
 		document.body.classList.toggle( 'ms-accuracy' );
@@ -322,8 +323,7 @@
 		for ( const el of captions.childNodes ) clean( el );
 	}
 
-	// let copyTime = true;
-	document.addEventListener('copy', function( e ) {
+	document.addEventListener( 'copy', function( e ) {
 		// Abort if invalid selection (i.e. not contained within the captions block)
 		const sel = window.getSelection();
 		if ( sel.rangeCount !== 1 ) return;
@@ -345,7 +345,7 @@
 				noTime = false;
 				el.innerHTML = '<code>' + t + ' - </code>' + el.innerHTML;
 			}
-		}
+		};
 		for ( const el of clip.children ) if ( el.tagName === 'P' ) time( el );
 		if ( noTime ) time( clip );
 		if ( noTime ) {
@@ -362,7 +362,68 @@
 		clip.remove();
 		e.preventDefault();
 	} );
-	//TODO For copy-paste within the page, a Ctrl+Shift+C copy should be defined removing the spans
+	//TODO Overwrite paste: remove all non-supported format. + timings from copy here
+	document.addEventListener( 'paste', function( e ) {
+		// Abort if invalid selection (i.e. not contained within the captions block)
+		const sel = window.getSelection();
+		if ( sel.rangeCount !== 1 ) return;
+		const range = sel.getRangeAt( 0 );
+		if ( ! ( captions.contains( range.startContainer ) && captions.contains( range.startContainer ) ) ) return;
+		e.preventDefault();
+		// Get the data to paste into a div to work on it
+		const clip = document.createElement( 'div' );
+		clip.innerHTML = e.clipboardData.getData( "text/html" );
+		console.log( 'PASTE:  ' + clip.innerHTML );
+		// Inject the cleaned HTML into another div
+		let toPaste = document.createElement( 'div' );
+		let textNode;
+		const transfer = ( fromEl, toEl ) => {
+			const text = ( t ) => {
+				if ( textNode ) {
+					textNode.appendData( t );
+				} else {
+					textNode = document.createTextNode( t );
+					toEl.appendChild( textNode );
+				}
+			}
+			for ( const el of fromEl.childNodes ) {
+				console.log( el );
+				if ( el.nodeType === 1 ) {
+					const tag = { I: 'i', EM: 'i', B: 'b', STRONG: 'b',  U: 'u' }[ el.tagName ]; // # <font>
+					console.log( tag );
+					if ( tag ) {
+						textNode = undefined;
+						const newEl = document.createElement( tag );
+						toEl.appendChild( newEl );
+						transfer( el, newEl );
+						textNode = undefined;
+					} else if ( el.tagName === 'P' ) {
+						text( ' ' );
+						transfer( el, toEl );
+						text( ' ' );
+					} else if ( el.tagName === 'BR' ) {
+						text( ' ' );
+					} else if ( el.tagName !== 'CODE' || ! el.innerHTML.match( /^[\d:.]+ - $/ ) )  {
+						transfer( el, toEl );
+					}
+				} else if ( el.nodeType === 3 ) {
+					text( el.textContent );
+				}
+			}
+		};
+		transfer( clip, toPaste );
+		// Paste
+		sel.deleteFromDocument();
+		console.log( toPaste.innerHTML );
+		toPaste = toPaste.childNodes;
+		console.log( toPaste.length );
+		for ( let k = toPaste.length; k--; ) {
+			range.insertNode( toPaste[ k ] );
+		}
+		//TODO move head
+		//TODO be subject to Ctrl+Z?
+	} );
+
 </script>
 
 </body>
