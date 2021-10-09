@@ -201,7 +201,11 @@
 		document.body.classList.toggle( 'ms-accuracy' );
 	}
 	function mergeWith() {
-		//TODO function: merge with script
+		/*TODO function: merge with script
+			[ ] Upload (such as in home page)
+			[ ] POST to let the controller do the merging
+			[ ] Update the #captions element
+		*/
 	}
 	function saveCaptions() {
 		fileFromServer( '/convert/save', '.cpt' );
@@ -317,6 +321,13 @@
 		}
 		for ( const el of captions.childNodes ) clean( el );
 	}
+
+	// document.addEventListener('copy', function(e) {
+	// 	console.log('copied');
+	// 	e.clipboardData.setData('text/plain', 'Hello World!');
+	// 	e.preventDefault();
+	// });
+	//TODO Smart copy-paste
 </script>
 
 </body>
