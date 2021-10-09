@@ -75,58 +75,15 @@ export async function fetchVideo( id: string ): Promise<ytData> {
  * @returns {[string,string][]} List of timed texts, as a list of [*time*, *text*] (where *time* is in text format).
  * @async
  */
-export async function fetchCaptions( url: string, msResolution: boolean = true ): Promise<[ string, string ][]> {
+export async function fetchCaptions( url: string ): Promise<[ string, string ][]> {
 	// Fetch the captions
 	const resp = await fetch( url );
 	if ( resp.status !== 200 ) {
 		if ( resp.status === 404 ) throw new FetchError( 404, 'Captions file not found.' );
 		throw 0;
 	}
-	const captions: string = replaceHtmlAmp( await ( resp ).text() );
-	// Useful regex in reading the captions file
-	const regTimeLine = /^(\d\d:\d\d:\d\d\.\d\d\d) --> \d\d:\d\d:\d\d\.\d\d\d/;
-	const regTimedWord = /<(\d\d:\d\d:\d\d\.\d\d\d)><c>(.+?)<\/c>/g;
-	// Read the words with their timings
-	const text: [string, string][] = []; // List of [ timing, words ] to build
-	let time!: string; // Last timing met
-	let last!: string; // Last line met
-	for ( let line of captions.split( '\n' ) ) {
-		line = line.trim();
-		if ( !line ) continue; // Skip empty lines
-		const m = line.match( regTimeLine );
-		if ( m ) { // It is a timing line
-			time = m[ 1 ]; // Store showing time
-			continue;
-		}
-		if ( time ) { // It is a text line (first timing met, so not a header)
-			if ( line.endsWith( '</c>' ) ) { // It is a line with word-level timing
-				const i = text.length; // Index for the first word (to be read later)
-				text.push( [ '', '' ] ); // Make some room for the first word
-				text[ i ] = [ time,
-					' ' +
-					line.replace( regTimedWord, ( _, t, w ) => { // Read each timed word, leaving the first wors
-						if ( w ) text.push( [ t, w ] );
-						return '';
-					} ),
-				]; // Store the remaining first word
-				last = line.replace( regTimedWord, '$2' ); // Store what was just read
-			} else if ( line !== last ) text.push( [ time, ' ' + line ] ); // It is a line without timing, which might be a double
-		}
-	}
-	if ( ! text.length ) return []; // No text, stop there
-	text[ 0 ][ 1 ] = text[ 0 ][ 1 ].substr( 1 ); // Remove the spaces added in front of the first line
-	// Strip the timings from excessive front characters + move the spaces (always after words)
-	const zeroes = text[ text.length - 1 ][ 0 ].match( /^0*:?0?/ );
-	const s = ( zeroes ) ? zeroes[ 0 ].length : 0;
-	const n = ( msResolution ) ? undefined : 8 - s;
-	let space = false;
-	for ( let i = text.length; i--; ) {
-		text[ i ][ 0 ] = text[ i ][ 0 ].substr( s, n );
-		if ( space ) text[ i ][ 1 ] += " ";
-		space = text[ i ][ 1 ][ 0 ] === " ";
-		if ( space ) text[ i ][ 1 ] = text[ i ][ 1 ].substr( 1 );
-	}
-	return text;
+	// Read the captions
+	return readSubFile( await resp.text(), 'vtt' );
 }
 
 /**
@@ -186,11 +143,74 @@ function dateReformat( date: string ): string {
 }
 
 /**
+ * Read a srt or vtt file.
+ * @param {string} content Content of the file
+ * @param {string} [type] Type or file, i.e. 'vtt' or 'srt'. If not provided: automatically detected.
+ * @returns {[string,string][]} Content of the file as a list of [ time, words ]. Returns un empty file if not a recognized format.
+ */
+//IMPROVE readSubFile: Support more that 
+export function readSubFile( content: string, type?: string ): [ string, string ][] {
+	if ( ! content.match( /^(\d\d:\d\d:\d\d[.,]\d\d\d) --> \d\d:\d\d:\d\d[.,]\d\d\d/ ) ) return [];
+	// Pre-treatment
+	if ( type !== 'vtt' ) { // If not sure it's a vtt file…
+		content = '\n' + content;
+		content =
+			content
+				.replace( /(?<=\d\d:\d\d:\d\d),(?=\d\d\d)/g, '.' ) // replace commas in timing with dots…
+				.replace( /\n\d+(?=\n\d\d:\d\d:\d\d\.\d\d\d --> \d\d:\d\d:\d\d\.\d\d\d)/g, '' ); // and remove the potential subtitle index preceding timing lines in srt files.
+	}
+	content = replaceHtmlAmp( content );
+	// Useful regex in reading the captions file
+	const regTimeLine = /^(\d\d:\d\d:\d\d\.\d\d\d) --> \d\d:\d\d:\d\d\.\d\d\d/;
+	const regTimedWord = /<(\d\d:\d\d:\d\d\.\d\d\d)><c>(.+?)<\/c>/g;
+	// Read the words with their timings
+	const captions: [string, string][] = []; // List of [ timing, words ] to build
+	let time!: string; // Last timing met
+	let last!: string; // Last line met
+	for ( let line of content.split( '\n' ) ) {
+		line = line.trim();
+		if ( !line ) continue; // Skip empty lines
+		const m = line.match( regTimeLine );
+		if ( m ) { // It is a timing line
+			time = m[ 1 ]; // Store showing time
+			continue;
+		}
+		if ( time ) { // It is a text line (first timing met, so not a header)
+			if ( line.endsWith( '</c>' ) ) { // It is a line with word-level timing
+				const i = captions.length; // Index for the first word (to be read later)
+				captions.push( [ '', '' ] ); // Make some room for the first word
+				captions[ i ] = [ time,
+					' ' +
+					line.replace( regTimedWord, ( _, t, w ) => { // Read each timed word, leaving the first wors
+						if ( w ) captions.push( [ t, w ] );
+						return '';
+					} ),
+				]; // Store the remaining first word
+				last = line.replace( regTimedWord, '$2' ); // Store what was just read
+			} else if ( line !== last ) captions.push( [ time, ' ' + line ] ); // It is a line without timing, which might be a double
+		}
+	}
+	if ( ! captions.length ) return []; // No text, stop there
+	captions[ 0 ][ 1 ] = captions[ 0 ][ 1 ].substr( 1 ); // Remove the spaces added in front of the first line
+	// Strip the timings from excessive front characters + move the spaces (always after words)
+	const zeroes = captions[ captions.length - 1 ][ 0 ].match( /^0*:?0?/ );
+	const s = ( zeroes ) ? zeroes[ 0 ].length : 0;
+	let space = false;
+	for ( let i = captions.length; i--; ) {
+		captions[ i ][ 0 ] = captions[ i ][ 0 ].substr( s );
+		if ( space ) captions[ i ][ 1 ] += " ";
+		space = captions[ i ][ 1 ][ 0 ] === " ";
+		if ( space ) captions[ i ][ 1 ] = captions[ i ][ 1 ].substr( 1 );
+	}
+	return captions;
+}
+
+/**
  * Decode &...; and &#...; HTML special characters by their value.
  * @param {string} str String in which characters should be decoded
  * @returns {string} String with decoded characters
  */
-function replaceHtmlAmp( str: string ): string {
+ function replaceHtmlAmp( str: string ): string {
 	return str.replace( /&([a-z0-9]+|#([0-9]+));/gi, ( x, m, n ) => {
 		// &#...;
 		if ( n ) return String.fromCharCode( Number( n ) );
@@ -220,21 +240,6 @@ function replaceHtmlAmp( str: string ): string {
 		if ( c ) return c[ ( m.charCodeAt( 0 ) < 95 ) ? 0 : 1 ];
 		return x;
 	} );
-}
-
-/**
- * Read a srt or vtt file.
- * @param {string} content Content of the file
- * @param {string} [type] Type or file, i.e. 'vtt' or 'srt'. If not provided: automatically detected.
- * @returns {[string,string][]} Content of the file as a list of [ time, words ]
- */
-export function readSubFile( content: string, type?: string ): [ string, string ][] {
-	/*TODO readSubFile
-		fetchCaptions already does the work for vtt
-		vtt or srt should be detected if `type` isn't provided, as well as word-timed or not
-		code should be adapted to handle all those situations
-	*/
-	return [ [ '00:00:00.000', content ] ]; //HACK
 }
 
 /*TODO  <i>, <b>, <u> vs loading and matching:
