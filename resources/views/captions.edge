@@ -362,7 +362,7 @@
 		clip.remove();
 		e.preventDefault();
 	} );
-	//TODO Overwrite paste: remove all non-supported format. + timings from copy here
+	
 	document.addEventListener( 'paste', function( e ) {
 		// Abort if invalid selection (i.e. not contained within the captions block)
 		const sel = window.getSelection();
@@ -420,8 +420,7 @@
 		for ( let k = toPaste.length; k--; ) {
 			range.insertNode( toPaste[ k ] );
 		}
-		//TODO move head
-		//TODO be subject to Ctrl+Z?
+		//IMPROVE Pasting: move writing head to after the pasted text + be able to Ctrl+Z
 	} );
 
 </script>
