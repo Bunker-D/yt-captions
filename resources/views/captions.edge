@@ -163,7 +163,8 @@
 		#time-editor:focus .active {
 			background: #111;
 		}
-		.time-edition-target { color: #dc0000; }
+		.time-edition-target { color: #dc0000;  }
+		.time-edition-affected { color: #4d98fc; }
 	</style>
 </head>
 <body>
@@ -443,11 +444,6 @@
 	} );
 
 	captions.addEventListener( 'click', ( e ) => {
-		/*TODO Timed span merging
-			When the new time is lower than the following ones, the latter should be removed (span merging).
-			When the new time is higher than the following ones, the latter should be removed (span merging).
-			While the time is editing, text coloring should reflect that: all affected spans should be color.
-		*/
 		// Only Alt+Click must be handled
 		if ( ! e.ctrlKey ) return;
 		e.preventDefault();
@@ -506,14 +502,31 @@
 				}
 			} else if ( key === 'Escape' || key === 'Enter' ) {
 				const timeEl = document.getElementById( 'time-editor' );
-				for ( const el of captions.getElementsByClassName( 'time-edition-target' ) ) {
-					if ( key === 'Enter' ) {
-						el.setAttribute( 'data-time-ms', timeEl.textContent );
-						el.setAttribute( 'data-time', timeEl.textContent.split( '.' )[ 0 ] );
+				if ( key === 'Enter' ) {
+					const target = captions.getElementsByClassName( 'time-edition-target' )[ 0 ];
+					let next = target.nextElementSibling;
+					let next_;
+					while ( next && next.classList.contains( 'time-edition-affected' ) ) {
+						target.innerHTML = target.innerHTML + next.innerHTML;
+						next_ = next.nextElementSibling;
+						next.remove();
+						next = next_;
 					}
-					el.classList.remove( 'time-edition-target' );
+					next = target.previousElementSibling;
+					while ( next && next.classList.contains( 'time-edition-affected' ) ) {
+						target.innerHTML = next.innerHTML + target.innerHTML;
+						next_ = next.previousElementSibling;
+						next.remove();
+						next = next_;
+					}
+					target.setAttribute( 'data-time-ms', timeEl.textContent );
+					target.setAttribute( 'data-time', timeEl.textContent.split( '.' )[ 0 ] );
+				}
+				for ( const className of [ 'time-edition-target', 'time-edition-affected' ] ) {
+					for ( const el of captions.getElementsByClassName( className ) ) el.classList.remove( className );
 				}
 				timeEl.remove();
+				return;
 			} else if ( key.startsWith( 'Arrow' ) ) {
 				const digit = document.getElementById( 'time-editor' ).getElementsByClassName( 'active' )[ 0 ];
 				if ( key === 'ArrowLeft' || key === 'ArrowRight' ) {
@@ -522,6 +535,7 @@
 						digit.classList.remove( 'active' );
 						next.classList.add( 'active' );
 					}
+					return;
 				} else if ( key === 'ArrowUp' ) {
 					const recursive = ( d ) => {
 						if ( ! d ) return false;
@@ -554,13 +568,34 @@
 					recursive( digit );
 				}
 			}
+			const target = captions.getElementsByClassName( 'time-edition-target' )[ 0 ];
+			let next = target.nextElementSibling;
+			const t = document.getElementById( 'time-editor' ).textContent;
+			while ( next && ( next.getAttribute( 'data-time-ms' ) <= t ) ) {
+				next.classList.add( 'time-edition-affected' );
+				next = next.nextElementSibling;
+			}
+			while ( next && next.classList.contains( 'time-edition-affected' ) ) {
+				next.classList.remove( 'time-edition-affected' );
+				next = next.nextElementSibling;
+			}
+			next = target.previousElementSibling;
+			while ( next && ( next.getAttribute( 'data-time-ms' ) >= t ) ) {
+				next.classList.add( 'time-edition-affected' );
+				next = next.previousElementSibling;
+			}
+			while ( next && next.classList.contains( 'time-edition-affected' ) ) {
+				next.classList.remove( 'time-edition-affected' );
+				next = next.previousElementSibling;
+			}
+
 		} );
 		document.body.getElementsByTagName( 'main' )[ 0 ].appendChild( timeEl );
 		timeEl.focus();
+		/*TODO Better time-merging
+			Time merging (when previous/following timings are posterior/anterior to the new timing) should be able to go through <p>, <i>, <u>, <b>.
+		*/
 	} );
-	/*TODO Be able to add timings
-		Maybe middle click, or a click on the time tag, could create an editable time tag element that is closed (deleted) when losing focus, then the data is stored.
-	*/
 </script>
 
 </body>
