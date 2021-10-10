@@ -144,6 +144,26 @@
 		.ms-accuracy p > :first-child > :first-child > :first-child > span[data-time]:first-child::after {
 			content: attr(data-time-ms);
 		}
+
+		#time-editor {
+			font-family: monospace;
+			font-size: 35px;
+			background-color: #dc0000;
+			width: fit-content;
+			color: #fff;
+			line-height: 1em;
+			padding: 8px 21px;
+			border-radius: 24px;
+			border: solid 8px white;
+			position: absolute;
+			left: 32%;
+			top: 21%;
+			outline: none;
+		}
+		#time-editor:focus .active {
+			background: #111;
+		}
+		.time-edition-target { color: #dc0000; }
 	</style>
 </head>
 <body>
@@ -303,7 +323,9 @@
 		}
 		return res;
 	}
-	// Remove empty spans, remove unnecessary nbsp's, remove unsupported HTML tags, put French-typography-related nbsp's
+	/**
+	 * Remove empty spans, remove unnecessary nbsp's, remove unsupported HTML tags, put French-typography-related nbsp's
+	 */
 	function cleanEditor() {
 		const nbsp = String.fromCharCode( 160 );
 		const clean = ( el ) => {
@@ -373,7 +395,6 @@
 		// Get the data to paste into a div to work on it
 		const clip = document.createElement( 'div' );
 		clip.innerHTML = e.clipboardData.getData( "text/html" );
-		console.log( 'PASTE:  ' + clip.innerHTML );
 		// Inject the cleaned HTML into another div
 		let toPaste = document.createElement( 'div' );
 		let textNode;
@@ -387,10 +408,8 @@
 				}
 			}
 			for ( const el of fromEl.childNodes ) {
-				console.log( el );
 				if ( el.nodeType === 1 ) {
 					const tag = { I: 'i', EM: 'i', B: 'b', STRONG: 'b',  U: 'u' }[ el.tagName ]; // # <font>
-					console.log( tag );
 					if ( tag ) {
 						textNode = undefined;
 						const newEl = document.createElement( tag );
@@ -423,7 +442,127 @@
 		//IMPROVE Pasting: move writing head to after the pasted text + be able to Ctrl+Z
 	} );
 
+	captions.addEventListener( 'click', ( e ) => {
+		/*TODO Timed span merging
+			When the new time is lower than the following ones, the latter should be removed (span merging).
+			When the new time is higher than the following ones, the latter should be removed (span merging).
+			While the time is editing, text coloring should reflect that: all affected spans should be color.
+		*/
+		// Only Alt+Click must be handled
+		if ( ! e.ctrlKey ) return;
+		e.preventDefault();
+		//TODO Ctrl+Alt+Click should also cut the span at the word, for creating new timing locations
+		// Get the clicked timed element
+		let el = e.target;
+		while ( ! el.getAttribute( 'data-time-ms' ) ) {
+			if ( el === captions ) return;
+			el = el.parentElement;
+		}
+		for ( const span of captions.getElementsByClassName( 'time-edition-target' ) ) span.classList.remove( 'time-edition-target' );
+		el.classList.add( 'time-edition-target' );
+		// Create a time editor
+		const timeEl = document.createElement( 'button' );
+		timeEl.id = 'time-editor';
+		let ms = false;
+		for ( const char of el.getAttribute( 'data-time-ms' ) ) {
+			if ( char.charCodeAt( 0 ) < 48 || char.charCodeAt( 0 ) > 57 ) {
+				timeEl.appendChild( document.createTextNode( char ) );
+				if ( char === '.' ) ms = true;
+			} else {
+				const d = document.createElement( 'span' );
+				d.innerHTML = char;
+				if ( ms ) d.classList.add( 'ms' );
+				timeEl.appendChild( d );
+			}
+		}
+		// Set digit maximal values
+		let k = timeEl.children.length - ( ( ms ) ? 5 : 2);
+		if ( k >= 0 ) {
+			timeEl.children[ k ].dataset.max = '5';
+			k -= 2;
+			if ( k >= 0 ) timeEl.children[ k ].dataset.max = '5';
+		}
+		timeEl.children[ 0 ].classList.add( 'active' );
+		// Event listeners
+		timeEl.addEventListener( 'click', ( evt ) => {
+			evt.preventDefault();
+			const target = evt.target;
+			if ( target.tagName === 'SPAN' && ! target.classList.contains( 'active' ) ) {
+				for ( const digit of target.parentElement.children ) digit.classList.remove( 'active' );
+				target.classList.add( 'active' );
+			}
+		} );
+		timeEl.addEventListener( 'keydown', ( evt ) => {
+			evt.preventDefault();
+			const key = evt.key;
+			if ( '0123456789'.indexOf( key ) >= 0 ) {
+				const digit = document.getElementById( 'time-editor' ).getElementsByClassName( 'active' )[ 0 ];
+				if ( digit.dataset.max && '012345'.indexOf( key ) < 0 ) return;
+				digit.innerHTML = key;
+				const next = digit.nextElementSibling;
+				if ( next ) {
+					digit.classList.remove( 'active' );
+					next.classList.add( 'active' );
+				}
+			} else if ( key === 'Escape' || key === 'Enter' ) {
+				const timeEl = document.getElementById( 'time-editor' );
+				for ( const el of captions.getElementsByClassName( 'time-edition-target' ) ) {
+					if ( key === 'Enter' ) {
+						el.setAttribute( 'data-time-ms', timeEl.textContent );
+						el.setAttribute( 'data-time', timeEl.textContent.split( '.' )[ 0 ] );
+					}
+					el.classList.remove( 'time-edition-target' );
+				}
+				timeEl.remove();
+			} else if ( key.startsWith( 'Arrow' ) ) {
+				const digit = document.getElementById( 'time-editor' ).getElementsByClassName( 'active' )[ 0 ];
+				if ( key === 'ArrowLeft' || key === 'ArrowRight' ) {
+					const next = ( key === 'ArrowRight' ) ? digit.nextElementSibling : digit.previousElementSibling;
+					if ( next ) {
+						digit.classList.remove( 'active' );
+						next.classList.add( 'active' );
+					}
+				} else if ( key === 'ArrowUp' ) {
+					const recursive = ( d ) => {
+						if ( ! d ) return false;
+						const n = d.innerHTML;
+						if ( n === ( d.dataset.max ?? '9' ) ) {
+							if ( recursive( d.previousElementSibling ) ) {
+								d.innerHTML = '0';
+								return true;
+							}
+							return false
+						}
+						d.innerHTML = Number( n ) + 1;
+						return true;
+					}
+					recursive( digit );
+				} else if ( key === 'ArrowDown' ) {
+					const recursive = ( d ) => {
+						if ( ! d ) return false;
+						const n = d.innerHTML;
+						if ( n === '0' ) {
+							if ( recursive( d.previousElementSibling ) ) {
+								d.innerHTML = d.dataset.max ?? '9';
+								return true;
+							}
+							return false
+						}
+						d.innerHTML = Number( n ) - 1;
+						return true;
+					}
+					recursive( digit );
+				}
+			}
+		} );
+		document.body.getElementsByTagName( 'main' )[ 0 ].appendChild( timeEl );
+		timeEl.focus();
+	} );
+	/*TODO Be able to add timings
+		Maybe middle click, or a click on the time tag, could create an editable time tag element that is closed (deleted) when losing focus, then the data is stored.
+	*/
 </script>
 
 </body>
 </html>
+
