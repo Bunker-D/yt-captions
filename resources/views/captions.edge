@@ -241,8 +241,8 @@
 			if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) {
 				const filename = document.getElementById( 'video-title' ).textContent.replace( /[.\\/:*?"<>|]/g, '' ) + fileExtension;
 				const element = document.createElement( 'a' );
-				element.setAttribute( 'href', 'data:text/plain;charset=utf-8,' + encodeURIComponent( xmlHttp.responseText ) );
-				element.setAttribute( 'download', filename );
+				element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent( xmlHttp.responseText ); //HACK untested replacement for setAttribute
+				element.download = filename; //HACK untested replacement for setAttribute
 				element.style.display = 'none';
 				document.body.appendChild(element);
 				element.click();
@@ -262,7 +262,7 @@
 		}
 		let url = document.getElementById( 'video-descriptor' );
 		if ( url ) {
-			url = url.getAttribute( 'href' );
+			url = url.href;
 			if ( url ) args.url = url;
 		}
 		xmlHttp.send( JSON.stringify( args ) );
@@ -287,7 +287,7 @@
 			if ( ! span.textContent ) return;
 			let t;
 			try {
-				t = span.getAttribute( 'data-time-ms' );
+				t = span.dataset.timeMs;
 			} catch ( e ) { // Text node
 				currentBit[ 1 ] += span.textContent.replaceAll( '&', '&amp;' ).replaceAll( '<', '&lt;' );
 			}
@@ -357,11 +357,11 @@
 		clip.append( range.cloneContents() )
 		// Add timings where needed
 		let noTime = true;
-		const timeTag = ( document.body.classList.contains( 'ms-accuracy' ) ) ? 'data-time-ms' : 'data-time';
+		const timeTag = ( document.body.classList.contains( 'ms-accuracy' ) ) ? 'timeMs' : 'time';
 		const time = ( el ) => {
 			let t;
 			for ( const subel of el.children ) {
-				t = subel.getAttribute( timeTag );
+				t = subel.dataset[ timeTag ];
 				if ( t ) break;
 			}
 			if ( t ) {
@@ -376,12 +376,13 @@
 			let t;
 			do {
 				el = el.parentElement;
-				t = el.getAttribute( timeTag );
+				t = el.dataset[ timeTag ];
 			} while ( ! t )
 			if ( t ) clip.innerHTML = '<code>' + t + ' - </code>' + clip.innerHTML;
 		}
 		// Update the clipboard
 		e.clipboardData.setData( 'text/html', clip.innerHTML );
+		e.clipboardData.setData( 'text/plain', clip.textContent );
 		clip.remove();
 		e.preventDefault();
 	} );
@@ -444,23 +445,24 @@
 	} );
 
 	captions.addEventListener( 'click', ( e ) => {
+		const targetClass = 'time-edition-target', affectClass = 'time-edition-affected';
 		// Only Alt+Click must be handled
 		if ( ! e.ctrlKey ) return;
 		e.preventDefault();
 		//TODO Ctrl+Alt+Click should also cut the span at the word, for creating new timing locations
 		// Get the clicked timed element
 		let el = e.target;
-		while ( ! el.getAttribute( 'data-time-ms' ) ) {
+		while ( ! el.dataset.timeMs ) {
 			if ( el === captions ) return;
 			el = el.parentElement;
 		}
-		for ( const span of captions.getElementsByClassName( 'time-edition-target' ) ) span.classList.remove( 'time-edition-target' );
-		el.classList.add( 'time-edition-target' );
+		for ( const span of captions.getElementsByClassName( targetClass ) ) span.classList.remove( targetClass );
+		el.classList.add( targetClass );
 		// Create a time editor
 		const timeEl = document.createElement( 'button' );
 		timeEl.id = 'time-editor';
 		let ms = false;
-		for ( const char of el.getAttribute( 'data-time-ms' ) ) {
+		for ( const char of el.dataset.timeMs ) {
 			if ( char.charCodeAt( 0 ) < 48 || char.charCodeAt( 0 ) > 57 ) {
 				timeEl.appendChild( document.createTextNode( char ) );
 				if ( char === '.' ) ms = true;
@@ -478,7 +480,7 @@
 			k -= 2;
 			if ( k >= 0 ) timeEl.children[ k ].dataset.max = '5';
 		}
-		timeEl.children[ 0 ].classList.add( 'active' );
+		timeEl.firstElementChild.classList.add( 'active' );
 		// Event listeners
 		timeEl.addEventListener( 'click', ( evt ) => {
 			evt.preventDefault();
@@ -492,6 +494,7 @@
 			evt.preventDefault();
 			const key = evt.key;
 			if ( '0123456789'.indexOf( key ) >= 0 ) {
+				// Record digit
 				const digit = document.getElementById( 'time-editor' ).getElementsByClassName( 'active' )[ 0 ];
 				if ( digit.dataset.max && '012345'.indexOf( key ) < 0 ) return;
 				digit.innerHTML = key;
@@ -503,33 +506,36 @@
 			} else if ( key === 'Escape' || key === 'Enter' ) {
 				const timeEl = document.getElementById( 'time-editor' );
 				if ( key === 'Enter' ) {
-					const target = captions.getElementsByClassName( 'time-edition-target' )[ 0 ];
+					// Save new Timing //TODO
+					const target = captions.getElementsByClassName( targetClass )[ 0 ];
 					let next = target.nextElementSibling;
 					let next_;
-					while ( next && next.classList.contains( 'time-edition-affected' ) ) {
+					while ( next && next.classList.contains( affectClass ) ) {
 						target.innerHTML = target.innerHTML + next.innerHTML;
 						next_ = next.nextElementSibling;
 						next.remove();
 						next = next_;
 					}
 					next = target.previousElementSibling;
-					while ( next && next.classList.contains( 'time-edition-affected' ) ) {
+					while ( next && next.classList.contains( affectClass ) ) {
 						target.innerHTML = next.innerHTML + target.innerHTML;
 						next_ = next.previousElementSibling;
 						next.remove();
 						next = next_;
 					}
-					target.setAttribute( 'data-time-ms', timeEl.textContent );
-					target.setAttribute( 'data-time', timeEl.textContent.split( '.' )[ 0 ] );
+					target.dataset.timeMs = timeEl.textContent;
+					target.dataset.time = timeEl.textContent.split( '.' )[ 0 ];
 				}
-				for ( const className of [ 'time-edition-target', 'time-edition-affected' ] ) {
-					for ( const el of captions.getElementsByClassName( className ) ) el.classList.remove( className );
+				// Clean
+				for ( const xClass of [ targetClass, affectClass ] ) {
+					for ( const el of captions.getElementsByClassName( xClass ) ) el.classList.remove( xClass );
 				}
 				timeEl.remove();
 				return;
 			} else if ( key.startsWith( 'Arrow' ) ) {
 				const digit = document.getElementById( 'time-editor' ).getElementsByClassName( 'active' )[ 0 ];
 				if ( key === 'ArrowLeft' || key === 'ArrowRight' ) {
+					// Move active digit left or right
 					const next = ( key === 'ArrowRight' ) ? digit.nextElementSibling : digit.previousElementSibling;
 					if ( next ) {
 						digit.classList.remove( 'active' );
@@ -537,6 +543,7 @@
 					}
 					return;
 				} else if ( key === 'ArrowUp' ) {
+					// Increase digit
 					const recursive = ( d ) => {
 						if ( ! d ) return false;
 						const n = d.innerHTML;
@@ -552,6 +559,7 @@
 					}
 					recursive( digit );
 				} else if ( key === 'ArrowDown' ) {
+					// Decrease digit
 					const recursive = ( d ) => {
 						if ( ! d ) return false;
 						const n = d.innerHTML;
@@ -568,28 +576,60 @@
 					recursive( digit );
 				}
 			}
-			const target = captions.getElementsByClassName( 'time-edition-target' )[ 0 ];
-			let next = target.nextElementSibling;
+			// Show affected spans //TODO
+			const target = captions.getElementsByClassName( targetClass )[ 0 ];
+			for ( const elem of captions.getElementsByClassName( affectClass ) ) elem.classList.remove( affectClass ); //TODO Clean older affectClass faster?
+			let next/*: (Element) => Element*/, first/*: (Element) => Element*/;
 			const t = document.getElementById( 'time-editor' ).textContent;
-			while ( next && ( next.getAttribute( 'data-time-ms' ) <= t ) ) {
-				next.classList.add( 'time-edition-affected' );
-				next = next.nextElementSibling;
+			if ( t > target.dataset.timeMs ) {
+				next = ( elem ) => elem.nextElementSibling;
+				first = ( elem ) => elem.firstElementChild;
+			} else if ( t < target.dataset.timeMs ) {
+				next = ( elem ) => elem.previousElementSibling;
+				first = ( elem ) => elem.lastElementChild;
 			}
-			while ( next && next.classList.contains( 'time-edition-affected' ) ) {
-				next.classList.remove( 'time-edition-affected' );
-				next = next.nextElementSibling;
-			}
-			next = target.previousElementSibling;
-			while ( next && ( next.getAttribute( 'data-time-ms' ) >= t ) ) {
-				next.classList.add( 'time-edition-affected' );
-				next = next.previousElementSibling;
-			}
-			while ( next && next.classList.contains( 'time-edition-affected' ) ) {
-				next.classList.remove( 'time-edition-affected' );
-				next = next.previousElementSibling;
+			if ( next ) {
+				const handleContainer/*: (Element) => Element[] | null */ = ( container ) => { // Returns the list of valid elements, null if all the content is valid
+					const ok = [];
+					let subel = first( container );
+					while ( subel ) {
+						const t = subel.dataset.timeMs;
+						if ( t ) {
+							if ( stop( t ) ) return ok;
+						} else {
+							const rec = handleContainer( subel );
+							if ( rec ) return  [ ...ok, ...rec ];
+						}
+						ok.push( subel );
+						subel = next( subel );
+					}
+					return null;
+				}
 			}
 
+			// Functions next etc defined by whether the time is increased or decreased
+			// When reaching the end of element: go up. If #captions, ends there. CHeck if target is first of element, to maybe include it.
+
+			// while ( next && ( next.getAttribute( 'data-time-ms' ) <= t ) ) {
+			// 	next.classList.add( 'time-edition-affected' );
+			// 	next = next.nextElementSibling;
+			// }
+			// while ( next && next.classList.contains( 'time-edition-affected' ) ) {
+			// 	next.classList.remove( 'time-edition-affected' );
+			// 	next = next.nextElementSibling;
+			// }
+			// next = target.previousElementSibling;
+			// while ( next && ( next.getAttribute( 'data-time-ms' ) >= t ) ) {
+			// 	next.classList.add( 'time-edition-affected' );
+			// 	next = next.previousElementSibling;
+			// }
+			// while ( next && next.classList.contains( 'time-edition-affected' ) ) {
+			// 	next.classList.remove( 'time-edition-affected' );
+			// 	next = next.previousElementSibling;
+			// }
+
 		} );
+
 		document.body.getElementsByTagName( 'main' )[ 0 ].appendChild( timeEl );
 		timeEl.focus();
 		/*TODO Better time-merging
