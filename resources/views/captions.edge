@@ -163,8 +163,8 @@
 		#time-editor:focus .active {
 			background: #111;
 		}
-		.time-edition-target { color: #dc0000;  }
 		.time-edition-affected { color: #4d98fc; }
+		.time-edition-target { color: #dc0000;  }
 	</style>
 </head>
 <body>
@@ -218,6 +218,10 @@
 	const menu = document.getElementById( 'menu' );
 	const captions = document.getElementById( 'captions' );
 
+	//===========================//
+	//   MENU FUNCTIONALITIES   //
+	//=========================//
+
 	document.getElementById( 'burger' ).onclick = () => menu.classList.toggle( 'menu-off' );
 	function msAccuracy() {
 		document.body.classList.toggle( 'ms-accuracy' );
@@ -241,8 +245,8 @@
 			if ( xmlHttp.readyState == 4 && xmlHttp.status == 200 ) {
 				const filename = document.getElementById( 'video-title' ).textContent.replace( /[.\\/:*?"<>|]/g, '' ) + fileExtension;
 				const element = document.createElement( 'a' );
-				element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent( xmlHttp.responseText ); //HACK untested replacement for setAttribute
-				element.download = filename; //HACK untested replacement for setAttribute
+				element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent( xmlHttp.responseText );
+				element.download = filename;
 				element.style.display = 'none';
 				document.body.appendChild(element);
 				element.click();
@@ -268,6 +272,10 @@
 		xmlHttp.send( JSON.stringify( args ) );
 	}
 
+	//=======================//
+	//   USEFUL FUNCTIONS   //
+	//=====================//
+	
 	/**
 	 * Convert the current captions state into an array of paragraphs,
 	 * that are described as an array of timed bits, being described as [time,text].
@@ -346,6 +354,10 @@
 		for ( const el of captions.childNodes ) clean( el );
 	}
 
+	//=====================//
+	//   OVERWRITE COPY   //
+	//===================//
+
 	document.addEventListener( 'copy', function( e ) {
 		// Abort if invalid selection (i.e. not contained within the captions block)
 		const sel = window.getSelection();
@@ -387,6 +399,10 @@
 		e.preventDefault();
 	} );
 	
+	//======================//
+	//   OVERWRITE PASTE   //
+	//====================//
+
 	document.addEventListener( 'paste', function( e ) {
 		// Abort if invalid selection (i.e. not contained within the captions block)
 		const sel = window.getSelection();
@@ -443,6 +459,10 @@
 		}
 		//IMPROVE Pasting: move writing head to after the pasted text + be able to Ctrl+Z
 	} );
+
+	//==================================//
+	//   TIMING EDIT FUNCTIONALITIES   //
+	//================================//
 
 	captions.addEventListener( 'click', ( e ) => {
 		const targetClass = 'time-edition-target', affectClass = 'time-edition-affected';
@@ -506,29 +526,69 @@
 			} else if ( key === 'Escape' || key === 'Enter' ) {
 				const timeEl = document.getElementById( 'time-editor' );
 				if ( key === 'Enter' ) {
-					// Save new Timing //TODO
-					const target = captions.getElementsByClassName( targetClass )[ 0 ];
-					let next = target.nextElementSibling;
-					let next_;
-					while ( next && next.classList.contains( affectClass ) ) {
-						target.innerHTML = target.innerHTML + next.innerHTML;
-						next_ = next.nextElementSibling;
-						next.remove();
-						next = next_;
+					// Save new Timing
+					const time = timeEl.textContent;
+					let k = 0;
+					let span, spanContent, par;
+					const newSpan = ( innerHTML ) => {
+						if ( span && spanContent ) span.innerHTML = spanContent;
+						spanContent = '';
+						span = document.createElement( 'span' );
+						span.dataset.timeMs = time;
+						span.dataset.time = time.split( '.' )[ 0 ];
 					}
-					next = target.previousElementSibling;
-					while ( next && next.classList.contains( affectClass ) ) {
-						target.innerHTML = next.innerHTML + target.innerHTML;
-						next_ = next.previousElementSibling;
-						next.remove();
-						next = next_;
+					const moveToSpan = ( elem ) => {
+						if ( elem.nodeType === 1 ) {
+							const tag = [ '', 'bs', 'i', 'b', 'u' ][ [ 'BS', 'I', 'B', 'U' ].indexOf( elem.tagName ) + 1 ]; // # font
+							if ( tag ) {
+								spanContent += '<' + tag + '>';
+								if ( tag === 'bs' ) return;
+							}
+							if ( elem.dataset.timeMs ) {
+								spanContent += elem.innerHTML;
+							} else {
+								for ( const subel of elem.children ) moveToSpan( subel );
+							}
+							if ( tag ) spanContent += '</' + tag + '>';
+						} else if ( elem.nodeType === 3 ) {
+							spanContent += elem.textContent;
+						}
+						console.log( '  >>> ' + spanContent )
 					}
-					target.dataset.timeMs = timeEl.textContent;
-					target.dataset.time = timeEl.textContent.split( '.' )[ 0 ];
+					const affected = [];
+					for ( const elem of captions.getElementsByClassName( affectClass ) ) affected.push( elem );
+					affected.reverse();
+					while ( affected.length ) {
+						const elem = affected.pop();
+						if ( elem.tagName === 'P' ) {
+							newSpan();
+							moveToSpan( elem );
+							elem.innerHTML = '';
+							elem.appendChild( span );
+							elem.classList.remove( affectClass );
+							par = undefined;
+						} else {
+							let par_ = elem.parentElement;
+							while ( par_.tagName !== 'P' ) { // Check if in same p of if a new span shall be created and placed
+								if ( par_ === document.body ) throw 'Where am I?'
+								par_ = par_.parentElement;
+							}
+							if ( par_ !== par ) {
+								par = par_;
+								newSpan();
+								elem.parentElement.insertBefore( span, elem );
+							}
+							moveToSpan( elem );
+							elem.remove();
+						}
+					}
+					newSpan();
 				}
 				// Clean
 				for ( const xClass of [ targetClass, affectClass ] ) {
-					for ( const el of captions.getElementsByClassName( xClass ) ) el.classList.remove( xClass );
+					const toClean = [];
+					for ( const elem of captions.getElementsByClassName( xClass ) ) toClean.push( elem  )
+					for ( const elem of toClean ) elem.classList.remove( xClass );
 				}
 				timeEl.remove();
 				return;
@@ -575,67 +635,61 @@
 					}
 					recursive( digit );
 				}
-			}
-			// Show affected spans //TODO
+			} else return;
+			// Clear what was previously found to be affected
+			const oldAffected = []; // Variable needed because `for (const x of y.getElementsByClassName(z)) oldAffected.push( elem ); x.classList.remove(z);` doesn't properly work.
+			for ( const elem of captions.getElementsByClassName( affectClass ) ) oldAffected.push( elem );
+			for ( const elem of oldAffected ) elem.classList.remove( affectClass );
+			// Show affected spans
 			const target = captions.getElementsByClassName( targetClass )[ 0 ];
-			for ( const elem of captions.getElementsByClassName( affectClass ) ) elem.classList.remove( affectClass ); //TODO Clean older affectClass faster?
-			let next/*: (Element) => Element*/, first/*: (Element) => Element*/;
-			const t = document.getElementById( 'time-editor' ).textContent;
-			if ( t > target.dataset.timeMs ) {
+			const newTime = document.getElementById( 'time-editor' ).textContent;
+			let next/*: (Element): Element*/, first/*: (Element): Element*/, outside/*: (Element); boolean*/;
+			if ( newTime > target.dataset.timeMs ) {
 				next = ( elem ) => elem.nextElementSibling;
 				first = ( elem ) => elem.firstElementChild;
-			} else if ( t < target.dataset.timeMs ) {
+				outside = ( elem ) => ( elem.dataset.timeMs > newTime );
+			} else if ( newTime < target.dataset.timeMs ) {
 				next = ( elem ) => elem.previousElementSibling;
 				first = ( elem ) => elem.lastElementChild;
-			}
-			if ( next ) {
-				const handleContainer/*: (Element) => Element[] | null */ = ( container ) => { // Returns the list of valid elements, null if all the content is valid
-					const ok = [];
-					let subel = first( container );
-					while ( subel ) {
-						const t = subel.dataset.timeMs;
-						if ( t ) {
-							if ( stop( t ) ) return ok;
-						} else {
-							const rec = handleContainer( subel );
-							if ( rec ) return  [ ...ok, ...rec ];
-						}
-						ok.push( subel );
-						subel = next( subel );
-					}
-					return null;
+				outside = ( elem ) => ( elem.dataset.timeMs < newTime );
+			} else return;
+			const affected = ( container/*: Element*/, start/*: Element*/, inherited/*: Element[]*/ ) => {
+				let ok/*: Element[]*/, subel/*: Element*/;
+				if ( start ) { // Start is provided when starting at a given element within a container
+					ok = inherited ?? [ start ];
+					subel = next( start );
+				} else { // Else, a container to explore is provided
+					ok = [];
+					subel = first( container );
 				}
-			}
-
-			// Functions next etc defined by whether the time is increased or decreased
-			// When reaching the end of element: go up. If #captions, ends there. CHeck if target is first of element, to maybe include it.
-
-			// while ( next && ( next.getAttribute( 'data-time-ms' ) <= t ) ) {
-			// 	next.classList.add( 'time-edition-affected' );
-			// 	next = next.nextElementSibling;
-			// }
-			// while ( next && next.classList.contains( 'time-edition-affected' ) ) {
-			// 	next.classList.remove( 'time-edition-affected' );
-			// 	next = next.nextElementSibling;
-			// }
-			// next = target.previousElementSibling;
-			// while ( next && ( next.getAttribute( 'data-time-ms' ) >= t ) ) {
-			// 	next.classList.add( 'time-edition-affected' );
-			// 	next = next.previousElementSibling;
-			// }
-			// while ( next && next.classList.contains( 'time-edition-affected' ) ) {
-			// 	next.classList.remove( 'time-edition-affected' );
-			// 	next = next.previousElementSibling;
-			// }
-
+				while ( subel ) { // Go through the succesive elements
+					if ( subel.dataset.timeMs ) {
+						if ( outside( subel ) ) return ok
+					} else {
+						const sub = affected( subel ); // If not a timed-span, handle with recursive call
+						if ( sub ) return [ ...ok, ...sub ]; // A list is returned only when reaching a non affected element. If all content affected, null is returned.
+					}
+					ok.push( subel );
+					subel = next( subel );
+				} // If the end of the container is reached...
+				if ( start ) { // If at the start...
+					subel = start.parentElement;
+					if ( subel === captions ) return ok; // Don't go further than the top container
+					if ( inherited ) return affected( null, subel, ok );
+					if ( start === first( subel ) ) return affected( null, subel );
+					return affected( null, subel, ok );
+				}
+				return null; // If recursive call, return null: the all container is affected.
+			};
+			for ( const elem of affected( null, target ) ) elem.classList.add( affectClass );
 		} );
 
 		document.body.getElementsByTagName( 'main' )[ 0 ].appendChild( timeEl );
 		timeEl.focus();
-		/*TODO Better time-merging
-			Time merging (when previous/following timings are posterior/anterior to the new timing) should be able to go through <p>, <i>, <u>, <b>.
-		*/
 	} );
+
+	// Known issue: Slow to delete a lot of text.
+	//IMPROVE Mabye cuts (<p>) every N words if there is one single paragraph would be a good way to improve the speed
 </script>
 
 </body>
