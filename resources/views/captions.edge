@@ -125,7 +125,7 @@
 			content: '';
 			position: absolute;
 			bottom: 8px;
-			right: calc(100% + 0.6em);
+			right: calc( 100% + 0.6em );
 			background-color: #dc0000;
 			width: 0.7em;
 			height: 0.41em;
@@ -155,10 +155,23 @@
 			padding: 8px 21px;
 			border-radius: 24px;
 			border: solid 8px white;
-			position: absolute;
-			left: 32%;
-			top: 21%;
 			outline: none;
+			z-index: 40;
+			position: fixed;
+			top: 35%;
+			left: 50%;
+			transform: translate( -50%, 0 );
+		}
+		#time-editor.bottom { top: 65%; }
+		#time-editor.flicker { border-color: black; }
+		#time-editor::before {
+			content: '';
+			position: fixed;
+			width: 10000px;
+			height: 10000px;
+			left: -5000px;
+			top: -5000px;
+			z-index: -1;
 		}
 		#time-editor:focus .active {
 			background: #111;
@@ -451,9 +464,7 @@
 		transfer( clip, toPaste );
 		// Paste
 		sel.deleteFromDocument();
-		console.log( toPaste.innerHTML );
 		toPaste = toPaste.childNodes;
-		console.log( toPaste.length );
 		for ( let k = toPaste.length; k--; ) {
 			range.insertNode( toPaste[ k ] );
 		}
@@ -469,7 +480,7 @@
 		// Only Alt+Click must be handled
 		if ( ! e.ctrlKey ) return;
 		e.preventDefault();
-		//TODO Ctrl+Alt+Click should also cut the span at the word, for creating new timing locations
+		//IMPROVE Ctrl+Alt+Click should also cut the span at the word, for creating new timing locations
 		// Get the clicked timed element
 		let el = e.target;
 		while ( ! el.dataset.timeMs ) {
@@ -493,6 +504,7 @@
 				timeEl.appendChild( d );
 			}
 		}
+		if ( el.offsetTop - window.pageYOffset < window.innerHeight / 2 ) timeEl.classList.add( 'bottom' );
 		// Set digit maximal values
 		let k = timeEl.children.length - ( ( ms ) ? 5 : 2);
 		if ( k >= 0 ) {
@@ -505,9 +517,22 @@
 		timeEl.addEventListener( 'click', ( evt ) => {
 			evt.preventDefault();
 			const target = evt.target;
-			if ( target.tagName === 'SPAN' && ! target.classList.contains( 'active' ) ) {
+			const classList = target.classList;
+			if ( target.tagName === 'SPAN' ) {
+				if ( classList.contains( 'active' ) ) return;
 				for ( const digit of target.parentElement.children ) digit.classList.remove( 'active' );
-				target.classList.add( 'active' );
+				classList.add( 'active' );
+			} else {
+				classList.add( 'flicker' );
+				setTimeout( () => {
+					classList.remove( 'flicker' );
+					setTimeout( () => {
+						classList.add( 'flicker' );
+						setTimeout( () => {
+							classList.remove( 'flicker' );
+						}, 200 );
+					}, 200 );
+				}, 200 );
 			}
 		} );
 		timeEl.addEventListener( 'keydown', ( evt ) => {
@@ -553,7 +578,6 @@
 						} else if ( elem.nodeType === 3 ) {
 							spanContent += elem.textContent;
 						}
-						console.log( '  >>> ' + spanContent )
 					}
 					const affected = [];
 					for ( const elem of captions.getElementsByClassName( affectClass ) ) affected.push( elem );
