@@ -81,14 +81,14 @@
 		if ( target.value ) topClassList.add( 'some-input' );
 		else topClassList.remove( 'some-input' );
 	}
-	document.getElementById( 'file-upload' ).onchange = ( { target } ) => {
+	document.getElementById( 'file-upload' ).onchange = ( { target } ) => { //TODO better organization
 		if ( ! target.files.length ) return;
 		const reader = new FileReader();
 		reader.onload = () => {
 			const form = document.createElement( 'form' );
 			form.action = '/load';
 			form.method = 'POST';
-			content = document.createElement( 'input' );
+			const content = document.createElement( 'input' );
 			content.type = 'hidden';
 			content.name = 'content';
 			content.value = reader.result;

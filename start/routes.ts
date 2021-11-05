@@ -22,6 +22,8 @@ Route.post( '/convert/save', 'CaptionsController.exportSave' );
 
 // Load file
 Route.post( '/load', 'CaptionsController.loadFile' );
+// Merge
+Route.post( '/merge', 'CaptionsController.mergeWithFile' );
 
 // Youtube url in the url
 Route.get( '/http:/*', 'CaptionsController.urlParse' );

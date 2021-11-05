@@ -44,7 +44,6 @@
 		@endif
 		<p>Available captions:&nbsp;&nbsp;&nbsp;</p>
 		@if( Object.keys( captions ).length )
-			{{-- captionsStr = "<lang>@<url>|<lang>@<url>|<lang>@<url>…" --}}
 			@set( 'newLine', ( 'mix' in captions ) ? Object.keys( captions )[ 2 ] : ( 'auto' in captions ) ? 'auto' : false)
 			<div
 				@if( newLine )

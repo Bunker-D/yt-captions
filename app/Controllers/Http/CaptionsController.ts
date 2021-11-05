@@ -85,13 +85,13 @@ export default class CaptionsController {
 		let captions: [ String, String ][];
 		try {
 			captions =
-			   ( urls.length > 1 ) ? // Two captions files to combine (time and text)
-				   CaptionsController.retextCaptions(
-					   await ytFetchCaptions( urls[ 0 ] ),
-					   ( await ytFetchCaptions( urls[ 1 ] ) ).map( ( x ) => x[ 1 ] ).join( '' )
-				   )
-			   : // One single captions file
-				   await ytFetchCaptions( urls[ 0 ] );
+				( urls.length > 1 ) ? // Two captions files to combine (time and text)
+					CaptionsController.retextCaptions(
+						await ytFetchCaptions( urls[ 0 ] ),
+						( await ytFetchCaptions( urls[ 1 ] ) ).map( ( x ) => x[ 1 ] ).join( '' )
+					)
+				: // One single captions file
+					await ytFetchCaptions( urls[ 0 ] );
 		} catch ( e ) {
 			return response.redirect( request.url() );
 		}
@@ -110,10 +110,44 @@ export default class CaptionsController {
 	 */
 	public async loadFile( { request, view }: HttpContextContract ): Promise<void | string> {
 		let content: string = ( await request.validate( { schema: schema.create( { content: schema.string() } ) } ) ).content.trim();
+		return view.render( 'captions', CaptionsController.readFile( content ) );
+	}
+
+	/**
+	 * PAGE REQUEST:  Merge the text from a file with the content of a previous captions page
+	 */
+	public async mergeWithFile( { request, view }: HttpContextContract ): Promise<void | string> {
+		//TODO mergeWithFile
+		// Use CaptionsController.retextCaptions (might need modification for table depth / paragraphs)
+		// 
+
+	}
+
+	/**
+	 * In an object, find the value corresponding to a language keyword, knowing that for example 'en' might be here as 'en-US'.
+	 * @param {Object.<string,string>} obj Object to explore
+	 * @param {string} lang Language to look for
+	 * @returns {string} Value (or empty string language not found)
+	 */
+	private static matchLanguageKeyIn( obj: {[key:string]:string}, lang: string ): string {
+		if ( lang in obj ) return lang;
+		lang += '-';
+		for ( const key in obj ) {
+			if ( key.startsWith( lang ) ) return key;
+		}
+		return '';
+	}
+
+	/**
+	 * Read the encoded captions from a string, and the video informations if it is a .cpt file.
+	 * @param {string} content String to decode
+	 * @returns {CaptionsFileContent} Described content
+	 */
+	private static readFile( content: string ): CaptionsFileContent {
 		// Read the .cpt file
-		let video = {};
-		let captions: [ string, string ][][] = [];
 		let match: RegExpMatchArray | null = content.match( /{(\/)*([\d:.]+)}/ );
+		let video: { [ key: string ]: string } = {};
+		let captions: [ string, string ][][] = [];
 		if ( match && ( match.index === 0 || ( content[ 0 ] === '{' && content[ 2 ] === '}' ) ) ) {
 			if ( match.index ) {
 				const map = { T: 'title', A: 'channel', D: 'date', U: 'url', I: 'id' };
@@ -159,31 +193,21 @@ export default class CaptionsController {
 		} else {
 			// If actually not a .cpt file, relegate the reading to another function
 			captions = [ readSubFile( content ) ];
+			// If not a supported subtitle file, treat the input file as a script / raw text
+			if ( ! captions[ 0 ].length ) {
+				captions = [];
+				content = content.replace( '\r', '\n' );
+				captions = content.split( '\n' ).map( ( w ) => [ [ '00:00:00.000', w ] ] );
+			}
 		}
-		// Safety: Only keep tolerated 
+		// Safety: Only keep tolerated
 		for ( const par of captions ) {
 			for ( const tw of par ) {
 				tw[ 0 ].replace( /</g, '' );
 				tw[ 1 ].replace( /&/g, '&amp;' ).replace( /<(?!\/?([iu]|br?)>)/gi, '&lt;' ); // # <font>
 			}
 		}
-		//
-		return view.render( 'captions', { text: captions, ...video } );
-	}
-
-	/**
-	 * In an object, find the value corresponding to a language keyword, knowing that for example 'en' might be here as 'en-US'.
-	 * @param {Object.<string,string>} obj Object to explore
-	 * @param {string} lang Language to look for
-	 * @returns {string} Value (or empty string language not found)
-	 */
-	private static matchLanguageKeyIn( obj: {[key:string]:string}, lang: string ): string {
-		if ( lang in obj ) return lang;
-		lang += '-';
-		for ( const key in obj ) {
-			if ( key.startsWith( lang ) ) return key;
-		}
-		return '';
+		return { text: captions, ...video }
 	}
 
 	/**
@@ -388,6 +412,15 @@ export default class CaptionsController {
 			} ) ).captions.map( ( p ) => p.map( ( b ) => [ b[ 0 ], b[ 1 ] ] ) )
 		);
 	}
+}
+
+interface CaptionsFileContent {
+	text: [string,string][][],
+	title?: string,
+	channel?: string,
+	date?: string,
+	url?: string,
+	id?: string,
 }
 
 /*IMPROVE Support <font …> tags

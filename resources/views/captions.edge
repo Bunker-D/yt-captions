@@ -212,8 +212,11 @@
 		<img src="/icons/ms-yes.png" id="ms-img-yes"><img src="/icons/ms-no.png" id="ms-img-no">
 		<div class="menu-text">Switch&nbsp;time&nbsp;accuracy&nbsp;&nbsp;</div>
 	</div>
-	<div class="menu-item" onclick="mergeWith()">
-		<img src="/icons/Script.png">
+	<div class="menu-item">
+		<label for="merge-with" style="cursor:pointer">
+			<img src="/icons/script.png">
+		</label>
+		<input id="merge-with" type="file" onchange="mergeWith(this.files)" style="display:none"/>
 		<div class="menu-text">Merge&nbsp;with&nbsp;script&nbsp;&nbsp;</div>
 	</div>
 	<div class="menu-item" onclick="saveCaptions()">
@@ -239,12 +242,28 @@
 	function msAccuracy() {
 		document.body.classList.toggle( 'ms-accuracy' );
 	}
-	function mergeWith() {
-		/*TODO function: merge with script
-			[ ] Upload (such as in home page)
-			[ ] POST to let the controller do the merging
-			[ ] Update the #captions element
-		*/
+	function mergeWith( files ) {
+		console.log( files );
+		if ( ! files.length ) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			const form = document.createElement( 'form' );
+			form.action = '/merge';
+			form.method = 'POST';
+			const field = ( name, value ) => {
+				let el = document.createElement( 'input' );
+				el.type = 'hidden';
+				el.name = name;
+				el.value = ( typeof value === 'object' ) ? JSON.stringify( value ) : value;
+				form.appendChild( el );
+			}
+			field( 'script', reader.result );
+			const page = pageContent();
+			for ( const key of page ) field( key, page );
+			document.body.appendChild( form );
+			form.submit();
+		}
+		reader.readAsText( files[ 0 ] );
 	}
 	function saveCaptions() {
 		fileFromServer( '/convert/save', '.cpt' );
@@ -268,22 +287,9 @@
 		}
 		xmlHttp.open( 'POST', requestURL, true );
 		xmlHttp.setRequestHeader( "Content-Type", "application/json" );
-		const args = { captions: captionsTable() };
-		for ( const key of [ 'title', 'author', 'date' ] ) {
-			let value = document.getElementById( 'video-' + key );
-			if ( value ) {
-				value = value.textContent.trim();
-				if ( value.endsWith( ',' ) ) value = value.substr( 0, value.length - 1 ).trim();
-				if ( value ) args[ key ] = value;
-			}
-		}
-		let url = document.getElementById( 'video-descriptor' );
-		if ( url ) {
-			url = url.href;
-			if ( url ) args.url = url;
-		}
-		xmlHttp.send( JSON.stringify( args ) );
+		xmlHttp.send( JSON.stringify( pageContent() ) );
 	}
+	
 
 	//=======================//
 	//   USEFUL FUNCTIONS   //
@@ -292,16 +298,20 @@
 	/**
 	 * Convert the current captions state into an array of paragraphs,
 	 * that are described as an array of timed bits, being described as [time,text].
+	 * title: string
+	 * author: string
+	 * date: string
+	 * url: string
 	 */
-	function captionsTable()/*: [string,string][][]*/ {
+	function pageContent()/*: { captions: [string,string][][], }*/ {
 		cleanEditor();
-		const res = [ [ [ '', '' ] ] ];
-		let currentPar = res[ 0 ];
+		const captions = [ [ [ '', '' ] ] ];
+		let currentPar = captions[ 0 ];
 		let currentBit = currentPar[ 0 ];
 		const newPar = () => {
 			if ( currentPar.length ) {
 				currentPar = [];
-				res.push( currentPar );
+				captions.push( currentPar );
 			}
 		};
 		const newBit = ( span ) => {
@@ -337,11 +347,25 @@
 				if ( p.textContent.trim() ) newBit( p );
 			}
 		}
-		if ( ! currentPar.length ) res.pop();
-		if ( res[ 0 ][ 0 ][ 1 ].trim() ) {
-			res[ 0 ][ 0 ][ 0 ] = ( res.length > 1 ) ? res[ 1 ][ 0 ][ 0 ].replace( /\d/g, '0' ) : '00:00:00.000';
+		if ( ! currentPar.length ) captions.pop();
+		if ( captions[ 0 ][ 0 ][ 1 ].trim() ) {
+			captions[ 0 ][ 0 ][ 0 ] = ( captions.length > 1 ) ? captions[ 1 ][ 0 ][ 0 ].replace( /\d/g, '0' ) : '00:00:00.000';
 		} else {
-			res.splice( 0 , 1 );
+			captions.splice( 0 , 1 );
+		}
+		const res = { captions };
+		for ( const key of [ 'title', 'author', 'date' ] ) {
+			let value = document.getElementById( 'video-' + key );
+			if ( value ) {
+				value = value.textContent.trim();
+				if ( value.endsWith( ',' ) ) value = value.substr( 0, value.length - 1 ).trim();
+				if ( value ) res[ key ] = value;
+			}
+		}
+		let url = document.getElementById( 'video-descriptor' );
+		if ( url ) {
+			url = url.href;
+			if ( url ) res.url = url;
 		}
 		return res;
 	}

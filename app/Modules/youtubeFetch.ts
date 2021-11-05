@@ -148,16 +148,18 @@ function dateReformat( date: string ): string {
  * @param {string} [type] Type or file, i.e. 'vtt' or 'srt'. If not provided: automatically detected.
  * @returns {[string,string][]} Content of the file as a list of [ time, words ]. [] if the input is not a recognized format.
  */
-//IMPROVE readSubFile: Support more that 
+//IMPROVE readSubFile: Support more than that 
 export function readSubFile( content: string, type?: string ): [ string, string ][] {
 	if ( ! content.match( /(^|\n)(\d\d:\d\d:\d\d[.,]\d\d\d) --> \d\d:\d\d:\d\d[.,]\d\d\d/ ) ) return [];
 	// Pre-treatment
 	if ( type !== 'vtt' ) { // If not sure it's a vtt file…
 		content = '\n' + content;
+		console.log( content.substr(0,500) );
 		content =
 			content
 				.replace( /(?<=\d\d:\d\d:\d\d),(?=\d\d\d)/g, '.' ) // replace commas in timing with dots…
 				.replace( /\n\d+(?=\n\d\d:\d\d:\d\d\.\d\d\d --> \d\d:\d\d:\d\d\.\d\d\d)/g, '' ); // and remove the potential subtitle index preceding timing lines in srt files.
+		console.log( content.substr(0,500) );
 	}
 	content = replaceHtmlAmp( content );
 	// Useful regex in reading the captions file
