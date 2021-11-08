@@ -1,19 +1,19 @@
 @set( 'link', url || ( ( id ) ? ( 'https://www.youtube.com/watch?v=' + id ) : '' ) )
-@if( link || title || channel || date )
+@if( link || title || author || date )
 <{{{ ( link ) ? ( 'a target="_blank" href="' + link + '"' ) : 'div' }}}
 	id="video-descriptor"
 	style="text-decoration: none; color: inherit; display: block; width: 100%;"
 	class="video-descriptor"
 >
-	@if( title || channel || date )
+	@if( title || author || date )
 		@if( title )
 			<h2 id="video-title">{{ title }}</h2>
 		@endif
-		@if( channel || date )
+		@if( author || date )
 			@set( 'tag2', ( title ) ? '3' : '2' )
 			<h{{ tag2 }} style="display: block; width: 100%">
-				@if( channel )
-					<span style="float: left" id="video-author">{{ channel }}
+				@if( author )
+					<span style="float: left" id="video-author">{{ author }}
 						@if( date )~
 ,&nbsp;&nbsp;&nbsp;</span><span style="float: right" id="video-date">{{ date }}
 						@endif~

@@ -36,7 +36,7 @@ export async function fetchVideo( id: string ): Promise<ytData> {
 	const data: ytData = {
 		id: id,
 		title: video.title,
-		channel: video.channel,
+		author: video.channel,
 		date: dateReformat( video.upload_date ),
 		captions: {},
 	};
@@ -111,7 +111,7 @@ export class FetchError {
 export interface ytData {
 	id: string,
 	title: string,
-	channel: string,
+	author: string,
 	date: string,
 	captions: { [ key: string ]: string },
 	lang?: string,

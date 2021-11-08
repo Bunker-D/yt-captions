@@ -38,7 +38,7 @@
 <div>
 	<img src="/yt-captions.png">
 	<div>
-		@!videoDescriptor( { id, title, channel, date } )
+		@!videoDescriptor( { id, title, author, date } )
 		@if( error )
 			<div class="error">{{ error }}</div>
 		@endif
@@ -55,7 +55,7 @@
 				@each( ( url, lang ) in captions )
 					<form action="/{{ id }}/{{ ( lang === 'auto' ) ? '0' : ( lang === 'mix' ) ? '00' : lang }}" method="POST">
 						<input type="hidden" id="title" name="title" value="{{ title }}" >
-						<input type="hidden" id="channel" name="channel" value="{{ channel }}" >
+						<input type="hidden" id="author" name="author" value="{{ author }}" >
 						<input type="hidden" id="date" name="date" value="{{ date }}" >
 						<input type="hidden" id="id" name="id" value="{{ id }}" >
 						<input type="hidden" id="url" name="url" value="{{ url }}" >

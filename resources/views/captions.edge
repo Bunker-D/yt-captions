@@ -186,11 +186,11 @@
 
 	<div class="head">
 		<img src="/yt-captions.png">
-		@!videoDescriptor( { id, title, channel, date, url } )
+		@!videoDescriptor( { id, title, author, date, url } )
 	</div>
 
 	<blockquote id="captions" contenteditable="true">
-		@each( par in text )~
+		@each( par in captions )~
 <p>
 			@each( bit in par )~
 <span
@@ -231,14 +231,13 @@
 </div>
 
 <script>
-	const menu = document.getElementById( 'menu' );
-	const captions = document.getElementById( 'captions' );
+	// const captions = document.getElementById( 'captions' );
 
 	//===========================//
 	//   MENU FUNCTIONALITIES   //
 	//=========================//
 
-	document.getElementById( 'burger' ).onclick = () => menu.classList.toggle( 'menu-off' );
+	document.getElementById( 'burger' ).onclick = () => document.getElementById( 'menu' ).classList.toggle( 'menu-off' );
 	function msAccuracy() {
 		document.body.classList.toggle( 'ms-accuracy' );
 	}
@@ -337,7 +336,8 @@
 				}
 			}
 		};
-		for ( const p of captions.childNodes ) {
+		const paragraphs = document.getElementById( 'captions' ).childNodes;
+		for ( const p of paragraphs ) {
 			if ( p.tagName === 'P' ) {
 				newPar();
 				for ( const span of p.childNodes ) {
@@ -388,7 +388,8 @@
 				el.textContent = s.replace( /(?<=[«({\[]) | (?=[»)}\]:;!?])/g, nbsp );
 			}
 		}
-		for ( const el of captions.childNodes ) clean( el );
+		const paragraphs = document.getElementById( 'captions' ).childNodes;
+		for ( const el of paragraphs ) clean( el );
 	}
 
 	//=====================//
@@ -400,7 +401,8 @@
 		const sel = window.getSelection();
 		if ( sel.rangeCount !== 1 ) return;
 		const range = sel.getRangeAt( 0 );
-		if ( ! ( captions.contains( range.startContainer ) && captions.contains( range.startContainer ) ) ) return;
+		const editor = document.getElementById( 'captions' );
+		if ( ! ( editor.contains( range.startContainer ) && editor.contains( range.startContainer ) ) ) return;
 		// Copy the selection into a div to work on it
 		const clip = document.createElement( 'div' );
 		clip.append( range.cloneContents() )
@@ -445,7 +447,8 @@
 		const sel = window.getSelection();
 		if ( sel.rangeCount !== 1 ) return;
 		const range = sel.getRangeAt( 0 );
-		if ( ! ( captions.contains( range.startContainer ) && captions.contains( range.startContainer ) ) ) return;
+		const editor = document.getElementById( 'captions' );
+		if ( ! ( editor.contains( range.startContainer ) && editor.contains( range.startContainer ) ) ) return;
 		e.preventDefault();
 		// Get the data to paste into a div to work on it
 		const clip = document.createElement( 'div' );
@@ -499,7 +502,8 @@
 	//   TIMING EDIT FUNCTIONALITIES   //
 	//================================//
 
-	captions.addEventListener( 'click', ( e ) => {
+	document.getElementById( 'captions' ).addEventListener( 'click', ( e ) => {
+		const editor = document.getElementById( 'captions' );
 		const targetClass = 'time-edition-target', affectClass = 'time-edition-affected';
 		// Only Alt+Click must be handled
 		if ( ! e.ctrlKey ) return;
@@ -508,10 +512,10 @@
 		// Get the clicked timed element
 		let el = e.target;
 		while ( ! el.dataset.timeMs ) {
-			if ( el === captions ) return;
+			if ( el === editor ) return;
 			el = el.parentElement;
 		}
-		for ( const span of captions.getElementsByClassName( targetClass ) ) span.classList.remove( targetClass );
+		for ( const span of editor.getElementsByClassName( targetClass ) ) span.classList.remove( targetClass );
 		el.classList.add( targetClass );
 		// Create a time editor
 		const timeEl = document.createElement( 'button' );
@@ -604,7 +608,7 @@
 						}
 					}
 					const affected = [];
-					for ( const elem of captions.getElementsByClassName( affectClass ) ) affected.push( elem );
+					for ( const elem of editor.getElementsByClassName( affectClass ) ) affected.push( elem );
 					affected.reverse();
 					while ( affected.length ) {
 						const elem = affected.pop();
@@ -635,7 +639,7 @@
 				// Clean
 				for ( const xClass of [ targetClass, affectClass ] ) {
 					const toClean = [];
-					for ( const elem of captions.getElementsByClassName( xClass ) ) toClean.push( elem  )
+					for ( const elem of editor.getElementsByClassName( xClass ) ) toClean.push( elem  )
 					for ( const elem of toClean ) elem.classList.remove( xClass );
 				}
 				timeEl.remove();
@@ -686,10 +690,10 @@
 			} else return;
 			// Clear what was previously found to be affected
 			const oldAffected = []; // Variable needed because `for (const x of y.getElementsByClassName(z)) oldAffected.push( elem ); x.classList.remove(z);` doesn't properly work.
-			for ( const elem of captions.getElementsByClassName( affectClass ) ) oldAffected.push( elem );
+			for ( const elem of editor.getElementsByClassName( affectClass ) ) oldAffected.push( elem );
 			for ( const elem of oldAffected ) elem.classList.remove( affectClass );
 			// Show affected spans
-			const target = captions.getElementsByClassName( targetClass )[ 0 ];
+			const target = editor.getElementsByClassName( targetClass )[ 0 ];
 			const newTime = document.getElementById( 'time-editor' ).textContent;
 			let next/*: (Element): Element*/, first/*: (Element): Element*/, outside/*: (Element); boolean*/;
 			if ( newTime > target.dataset.timeMs ) {
@@ -722,7 +726,7 @@
 				} // If the end of the container is reached...
 				if ( start ) { // If at the start...
 					subel = start.parentElement;
-					if ( subel === captions ) return ok; // Don't go further than the top container
+					if ( subel === editor ) return ok; // Don't go further than the top container
 					if ( inherited ) return affected( null, subel, ok );
 					if ( start === first( subel ) ) return affected( null, subel );
 					return affected( null, subel, ok );
@@ -738,6 +742,7 @@
 
 	// Known issue: Slow to delete a lot of text.
 	//IMPROVE Mabye cuts (<p>) every N words if there is one single paragraph would be a good way to improve the speed
+	//TODO use .onXXX for defining the events?
 </script>
 
 </body>

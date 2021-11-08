@@ -39,6 +39,7 @@ export default class CaptionsController {
 	public async fetchVideo( { params, view }: HttpContextContract ): Promise<void | string> {
 		try {
 			const data: ytData = await ytFetchVideo( params.id );
+			console.log( data );
 			CaptionsController.mixCaptions( data );
 			return view.render( 'video', data );
 		} catch ( e ) {
@@ -50,7 +51,7 @@ export default class CaptionsController {
 	 * PAGE REQUEST:  Create the page for a given video and captions track
 	 */
 	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
-		let reqData = request.body();
+		let reqData = request.body(); //TODO  Maybe should use a validator?
 		let urls: string[];
 		if ( reqData.url ) {
 			urls = reqData.url.split( '@' );
@@ -82,7 +83,7 @@ export default class CaptionsController {
 			reqData = videoData;
 		}
 		// Fetch the captions
-		let captions: [ String, String ][];
+		let captions: [ string, string ][];
 		try {
 			captions =
 				( urls.length > 1 ) ? // Two captions files to combine (time and text)
@@ -98,10 +99,10 @@ export default class CaptionsController {
 		// Build page
 		return view.render( 'captions', {
 			title: reqData.title,
-			channel: reqData.channel,
+			author: reqData.author,
 			date: reqData.date,
 			id: reqData.id,
-			text: [ captions ],
+			captions: [ captions ],
 		} );
 	}
 
@@ -116,11 +117,12 @@ export default class CaptionsController {
 	/**
 	 * PAGE REQUEST:  Merge the text from a file with the content of a previous captions page
 	 */
-	public async mergeWithFile( { request, view }: HttpContextContract ): Promise<void | string> {
+	public async mergeWithFile( { /*request, view*/ }: HttpContextContract ): Promise<void | string> {
 		//TODO mergeWithFile
-		// Use CaptionsController.retextCaptions (might need modification for table depth / paragraphs)
-		// 
-
+		// Read the request data
+		// Read the script with CaptionsController.readFile
+		// Merge with CaptionsController.retextCaptions (might need modification for table depth / paragraphs)
+		// Return view.render
 	}
 
 	/**
@@ -150,7 +152,7 @@ export default class CaptionsController {
 		let captions: [ string, string ][][] = [];
 		if ( match && ( match.index === 0 || ( content[ 0 ] === '{' && content[ 2 ] === '}' ) ) ) {
 			if ( match.index ) {
-				const map = { T: 'title', A: 'channel', D: 'date', U: 'url', I: 'id' };
+				const map = { T: 'title', A: 'author', D: 'date', U: 'url', I: 'id' };
 				const head = content.substr( 0, match.index );
 				for ( const m of head.matchAll( /{([A-Z])}((?:[^{]|{\/)+)/g ) ) {
 					if ( m[ 1 ] in map ) video[ map[ m[ 1 ] ] ] = m[ 2 ].replace( /{\//g, '{' );
@@ -207,7 +209,7 @@ export default class CaptionsController {
 				tw[ 1 ].replace( /&/g, '&amp;' ).replace( /<(?!\/?([iu]|br?)>)/gi, '&lt;' ); // # <font>
 			}
 		}
-		return { text: captions, ...video }
+		return { captions: captions, ...video }
 	}
 
 	/**
@@ -234,8 +236,8 @@ export default class CaptionsController {
 
 	/**
 	 * Produce captions based on original (timed) captions and a proper text.
-	 * @param captions Captions providing the basis for timings
-	 * @param text Text of the captions to create
+	 * @param {[string,string][]} captions Captions providing the basis for timings
+	 * @param {string} text Text of the captions to create
 	 * @returns {[string,string][]} Created captions
 	 */
 	private static retextCaptions( captions: [ string, string ][], text: string ): [string,string][] {
@@ -408,16 +410,36 @@ export default class CaptionsController {
 	private static async captionsFromRequest( request: RequestContract ): Promise<[string,string][][]> {
 		return (
 			( await request.validate( {
-				schema: schema.create( { captions: schema.array().members( schema.array().members( schema.array( [ rules.minLength( 2 ) ] ).members( schema.string() ) ) ) } )
+				schema: schema.create( {
+					captions: schema.array().members( schema.array().members( schema.array( [ rules.minLength( 2 ) ] ).members( schema.string() ) ) )
+				} )
 			} ) ).captions.map( ( p ) => p.map( ( b ) => [ b[ 0 ], b[ 1 ] ] ) )
+		);
+	}
+
+	/**
+	 * Get the video-describing data from a request: title, author, date, url.
+	 * @param request Request to get the data from
+	 * @returns An object with the data contained in the request.
+	 */
+	private static async descriptionFromRequest( request: RequestContract ): Promise<[string,string][][]> {
+		return (
+			await request.validate( {
+				schema: schema.create( {
+					title: schema.string.optional( { escape: true, trim: true } ),
+					author: schema.string.optional( { escape: true, trim: true } ),
+					date: schema.string.optional( { escape: true, trim: true } ),
+					url: schema.string.optional( {}, [ rules.url() ] ),
+				} )
+			)
 		);
 	}
 }
 
 interface CaptionsFileContent {
-	text: [string,string][][],
+	captions: [string,string][][],
 	title?: string,
-	channel?: string,
+	author?: string,
 	date?: string,
 	url?: string,
 	id?: string,
