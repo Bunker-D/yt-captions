@@ -83,7 +83,7 @@ export default class CaptionsController {
 			reqData = videoData;
 		}
 		// Fetch the captions
-		let captions: [ string, string ][];
+		let captions: TimedCaptionsParagraph;
 		try {
 			captions =
 				( urls.length > 1 ) ? // Two captions files to combine (time and text)
@@ -143,13 +143,13 @@ export default class CaptionsController {
 	/**
 	 * Read the encoded captions from a string, and the video informations if it is a .cpt file.
 	 * @param {string} content String to decode
-	 * @returns {CaptionsFileContent} Described content
+	 * @returns {VideoContent} Described content
 	 */
-	private static readFile( content: string ): CaptionsFileContent {
+	private static readFile( content: string ): VideoContent {
 		// Read the .cpt file
 		let match: RegExpMatchArray | null = content.match( /{(\/)*([\d:.]+)}/ );
 		let video: { [ key: string ]: string } = {};
-		let captions: [ string, string ][][] = [];
+		let captions: TimedCaptions = [];
 		if ( match && ( match.index === 0 || ( content[ 0 ] === '{' && content[ 2 ] === '}' ) ) ) {
 			if ( match.index ) {
 				const map = { T: 'title', A: 'author', D: 'date', U: 'url', I: 'id' };
@@ -162,7 +162,7 @@ export default class CaptionsController {
 			let t: string = ''; // timing of the current timed bit (i.e. last timing met)
 			let i: number = 0; // start index of the current timed bit
 			let r: boolean = false; // some "{/…}" in the text of the bit to be replaced
-			let paragraph: [ string, string ][] = [];
+			let paragraph: TimedCaptionsParagraph = [];
 			const newPar = () => {
 				if ( paragraph.length ) {
 					captions.push( paragraph );
@@ -236,11 +236,11 @@ export default class CaptionsController {
 
 	/**
 	 * Produce captions based on original (timed) captions and a proper text.
-	 * @param {[string,string][]} captions Captions providing the basis for timings
+	 * @param {TimedCaptionsParagraph} captions Captions providing the basis for timings
 	 * @param {string} text Text of the captions to create
-	 * @returns {[string,string][]} Created captions
+	 * @returns {TimedCaptionsParagraph} Created captions
 	 */
-	private static retextCaptions( captions: [ string, string ][], text: string ): [string,string][] {
+	private static retextCaptions( captions: TimedCaptionsParagraph, text: string ): TimedCaptionsParagraph { // Should handle TimeCaptions, not TimeCaptionsParagraph
 		// Build the indices of where timings apply in original captions
 		let indices: number[] = [];
 		let i = 0;
@@ -255,7 +255,7 @@ export default class CaptionsController {
 			indices
 		);
 		// Build the target captions
-		const result: [ string, string ][] = [];
+		const result: TimedCaptionsParagraph = [];
 		let t!: string;
 		let s!: number;
 		i = 0;
@@ -328,7 +328,7 @@ export default class CaptionsController {
 	 * (See captionsFromRequest() for information about the request formatting.)
 	 */
 	public async exportSrt( { request, response }: HttpContextContract ): Promise<void> {
-		const captions: [ string, string ][][] = await CaptionsController.captionsFromRequest( request );
+		const captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
 		let k = captions[ 0 ][ 0 ][ 0 ].length;
 		const prefix = '\n' + ( '00:00:00'.substr( 0, 12 - k ) );
 		const commaIdx = k - 4;
@@ -377,7 +377,7 @@ export default class CaptionsController {
 	 * (See captionsFromRequest() for information about the request formatting.)
 	 */
 	public async exportSave( { request, response }: HttpContextContract ): Promise<void> {
-		const captions: [ string, string ][][] = await CaptionsController.captionsFromRequest( request );
+		const captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
 		const video = await request.validate( {
 			schema: schema.create( {
 				title: schema.string.optional( { escape: true, trim: true } ),
@@ -436,13 +436,17 @@ export default class CaptionsController {
 	}
 }
 
-interface CaptionsFileContent {
-	captions: [string,string][][],
+type TimedCaptionsParagraph = [ string, string ][];
+type TimedCaptions = TimedCaptionsParagraph[];
+interface VideoDescriptor {
 	title?: string,
 	author?: string,
 	date?: string,
 	url?: string,
 	id?: string,
+}
+interface VideoContent extends VideoDescriptor {
+	captions: TimedCaptions,
 }
 
 /*IMPROVE Support <font …> tags
