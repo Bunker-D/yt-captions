@@ -236,14 +236,15 @@
 	//===========================//
 	//   MENU FUNCTIONALITIES   //
 	//=========================//
+	//TODO prevent update/closing the page?
 
 	document.getElementById( 'burger' ).onclick = () => document.getElementById( 'menu' ).classList.toggle( 'menu-off' );
 	function msAccuracy() {
 		document.body.classList.toggle( 'ms-accuracy' );
 	}
 	function mergeWith( files ) {
-		console.log( files );
 		if ( ! files.length ) return;
+		//BUG The form send captions as a string. ⇒ Use XMLHttpRequest
 		const reader = new FileReader();
 		reader.onload = () => {
 			const form = document.createElement( 'form' );
@@ -256,9 +257,9 @@
 				el.value = ( typeof value === 'object' ) ? JSON.stringify( value ) : value;
 				form.appendChild( el );
 			}
-			field( 'script', reader.result );
+			field( 'text', reader.result );
 			const page = pageContent();
-			for ( const key of page ) field( key, page );
+			for ( const key in page ) field( key, page[ key ] );
 			document.body.appendChild( form );
 			form.submit();
 		}
@@ -741,7 +742,7 @@
 	} );
 
 	// Known issue: Slow to delete a lot of text.
-	//IMPROVE Mabye cuts (<p>) every N words if there is one single paragraph would be a good way to improve the speed
+	//IMPROVE Maybe cuts (<p>) every N words if there is one single paragraph would be a good way to improve the speed
 	//TODO use .onXXX for defining the events?
 </script>
 

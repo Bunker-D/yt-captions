@@ -39,7 +39,6 @@ export default class CaptionsController {
 	public async fetchVideo( { params, view }: HttpContextContract ): Promise<void | string> {
 		try {
 			const data: ytData = await ytFetchVideo( params.id );
-			console.log( data );
 			CaptionsController.mixCaptions( data );
 			return view.render( 'video', data );
 		} catch ( e ) {
@@ -83,16 +82,16 @@ export default class CaptionsController {
 			reqData = videoData;
 		}
 		// Fetch the captions
-		let captions: TimedCaptionsParagraph;
+		let captions: TimedCaptions;
 		try {
 			captions =
 				( urls.length > 1 ) ? // Two captions files to combine (time and text)
 					CaptionsController.retextCaptions(
-						await ytFetchCaptions( urls[ 0 ] ),
+						[ await ytFetchCaptions( urls[ 0 ] ) ],
 						( await ytFetchCaptions( urls[ 1 ] ) ).map( ( x ) => x[ 1 ] ).join( '' )
 					)
 				: // One single captions file
-					await ytFetchCaptions( urls[ 0 ] );
+					[ await ytFetchCaptions( urls[ 0 ] ) ];
 		} catch ( e ) {
 			return response.redirect( request.url() );
 		}
@@ -102,7 +101,7 @@ export default class CaptionsController {
 			author: reqData.author,
 			date: reqData.date,
 			id: reqData.id,
-			captions: [ captions ],
+			captions: captions,
 		} );
 	}
 
@@ -117,12 +116,21 @@ export default class CaptionsController {
 	/**
 	 * PAGE REQUEST:  Merge the text from a file with the content of a previous captions page
 	 */
-	public async mergeWithFile( { /*request, view*/ }: HttpContextContract ): Promise<void | string> {
-		//TODO mergeWithFile
-		// Read the request data
-		// Read the script with CaptionsController.readFile
-		// Merge with CaptionsController.retextCaptions (might need modification for table depth / paragraphs)
-		// Return view.render
+	public async mergeWithFile( { request, view }: HttpContextContract ): Promise<void | string> {
+		//TODO Should use data request
+		console.log( 'MERGE' );
+		const video: VideoDescriptor = await CaptionsController.descriptionFromRequest( request );
+		console.log( '1' );
+		const text: string =
+			CaptionsController.readFile(
+				( await request.validate( { schema: schema.create( { text: schema.string() } ) } ) ).text
+			).captions.map( ( p ) => p.map( ( x ) => x[ 1 ] ).join( '' ) ).join( '' );
+		console.log( '2' );
+		let captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
+		console.log( '3' );
+		captions = CaptionsController.retextCaptions( captions, text );
+		console.log( '⇒ render' );
+		return view.render( 'captions', { captions, ...video } );
 	}
 
 	/**
@@ -240,33 +248,41 @@ export default class CaptionsController {
 	 * @param {string} text Text of the captions to create
 	 * @returns {TimedCaptionsParagraph} Created captions
 	 */
-	private static retextCaptions( captions: TimedCaptionsParagraph, text: string ): TimedCaptionsParagraph { //TODO Should handle TimeCaptions, not TimeCaptionsParagraph
+	private static retextCaptions( captions: TimedCaptions, text: string ): TimedCaptions {
+		//TODO clean html characters and tags
 		// Build the indices of where timings apply in original captions
+		const paragraphs: number[] = [];
+		const times: string[] = [];
+		let captionsText: string = '';
 		let indices: number[] = [];
 		let i = 0;
-		for ( const x of captions ) {
-			indices.push( i );
-			i += x[ 1 ].length;
+		for ( let p = 0; p < captions.length; p++ ) {
+			for ( const x of captions[ p ] ) {
+				paragraphs.push( p );
+				times.push( x[ 0 ] );
+				captionsText += x[ 1 ];
+				indices.push( i );
+				i += x[ 1 ].length;
+			}
 		}
 		// Convert those indices to match the provided text
-		indices = matchTextsIndices(
-			captions.map( ( x ) => x[ 1 ] ).join( '' ),
-			text,
-			indices
-		);
+		indices = matchTextsIndices( captionsText, text, indices );
 		// Build the target captions
-		const result: TimedCaptionsParagraph = [];
+		const retimed: [string,string,number][] = [];
 		let t!: string;
 		let s!: number;
+		let p!: number;
 		i = 0;
 		for ( ; i < indices.length; i++ ) { // Get the first block
 			if ( indices[ i ] >= 0 ) {
-				t = captions[ i ][ 0 ];
+				t = times[ i ];
 				s = indices[ i ];
+				p = paragraphs[ i ];
 				if ( s > 0 ) {
-					result.push( [
-						captions[ 0 ][ 0 ].replace( /\d/g, '0' ), // If not timed, start put at 00:00.000
-						text.substring( 0, s )
+					retimed.push( [
+						times[ 0 ].replace( /\d/g, '0' ), // If not timed, start put at 00:00.000
+						text.substring( 0, s ),
+						0,
 					] );
 				}
 				break;
@@ -274,19 +290,20 @@ export default class CaptionsController {
 		}
 		for ( ; i < indices.length; i++ ) { // Continue
 			if ( indices[ i ] >= 0 ) {
-				result.push( [ t, text.substring( s, indices[ i ] ) ] );
-				t = captions[ i ][ 0 ];
+				retimed.push( [ t, text.substring( s, indices[ i ] ), p ] );
+				t = times[ i ];
 				s = indices[ i ];
+				p = paragraphs[ i ];
 			}
 		}
-		if ( t ) result.push( [ t, text.substring( s, indices[ i ] ) ] );
+		if ( t ) retimed.push( [ t, text.substring( s, indices[ i ] ), p ] );
 		// Move opening quotes, parenthesis, etc within the following block
 		const reg = /([\(\[\{‘“«‚„<¿¡]|(--+|[–—])|(?<=\ )[-'"])\ *$/;
 		let m: RegExpMatchArray | null;
 		let opened = false;
 		let str = '';
-		for ( let i = 0; i < result.length; i++ ) {
-			str = result[ i ][ 1 ];
+		for ( let i = 0; i < retimed.length; i++ ) {
+			str = retimed[ i ][ 1 ];
 			if ( opened && ( str.indexOf( '.' ) >= 0 || str.indexOf( '?' ) >= 0 || str.indexOf( '!' ) >= 0 ) ) {
 				opened = false;
 			}
@@ -301,12 +318,23 @@ export default class CaptionsController {
 						opened = true;
 					}
 				}
-				result[ i + 1 ][ 1 ] = m[ 0 ] + result[ i + 1 ][ 1 ];
+				retimed[ i + 1 ][ 1 ] = m[ 0 ] + retimed[ i + 1 ][ 1 ];
 				str = str.substr( 0, str.length - m[ 0 ].length );
-				result[ i ][ 1 ] = str;
+				retimed[ i ][ 1 ] = str;
 			}
 		}
 		// Return the result
+		p = -1;
+		const result: TimedCaptions = [];
+		let par: TimedCaptionsParagraph = [];
+		for ( const x of retimed ) {
+			if ( x[ 2 ] !== p ) {
+				par = [];
+				result.push( par );
+				p = x[ 2 ];
+			}
+			par.push( [ x[ 0 ], x[ 1 ] ] );
+		}
 		return result;
 	}
 
