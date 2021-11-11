@@ -242,27 +242,28 @@
 	function msAccuracy() {
 		document.body.classList.toggle( 'ms-accuracy' );
 	}
-	function mergeWith( files ) {
+	async function mergeWith( files ) {
 		if ( ! files.length ) return;
-		//BUG The form send captions as a string. ⇒ Use XMLHttpRequest
 		const reader = new FileReader();
-		reader.onload = () => {
-			const form = document.createElement( 'form' );
-			form.action = '/merge';
-			form.method = 'POST';
-			const field = ( name, value ) => {
-				let el = document.createElement( 'input' );
-				el.type = 'hidden';
-				el.name = name;
-				el.value = ( typeof value === 'object' ) ? JSON.stringify( value ) : value;
-				form.appendChild( el );
-			}
-			field( 'text', reader.result );
-			const page = pageContent();
-			for ( const key in page ) field( key, page[ key ] );
-			document.body.appendChild( form );
-			form.submit();
-		}
+		async function onload() {
+			const captions = await ( await fetch( '/merge', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify( {
+					captions: pageContent().captions,
+					text: reader.result,
+				} ),
+			} ) ).json();
+			const editor = document.getElementById( 'captions' );
+			editor.innerHTML = captions.map( ( par ) =>
+				'<p>' +
+				par.map( ( [ time, text ] ) =>
+					`<span data-time="${ time.split( '.' )[ 0 ] }" data-time-ms="${ time }">${ text }</span>`
+				).join('')
+				+ '</p>'
+			).join( '' );
+		};
+		reader.onload = onload;
 		reader.readAsText( files[ 0 ] );
 	}
 	function saveCaptions() {

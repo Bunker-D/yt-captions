@@ -16,8 +16,11 @@ export default class CaptionsController {
 	//HACK  test function — to be removed
 	public async test( { response /*view*/ }: HttpContextContract ): Promise<void | string> {
 		let res: string = 'testing';
+		console.log( 'TEST' );
 		// ...
-		response.status( 200 ).send( res );
+		// response.header('Content-type', 'application/json')
+		// response.json( res );
+		return response.send( [ 'test', 'me' ] );
 		// return view.render( 'captions', data );
 	}
 
@@ -111,26 +114,6 @@ export default class CaptionsController {
 	public async loadFile( { request, view }: HttpContextContract ): Promise<void | string> {
 		let content: string = ( await request.validate( { schema: schema.create( { content: schema.string() } ) } ) ).content.trim();
 		return view.render( 'captions', CaptionsController.readFile( content ) );
-	}
-
-	/**
-	 * PAGE REQUEST:  Merge the text from a file with the content of a previous captions page
-	 */
-	public async mergeWithFile( { request, view }: HttpContextContract ): Promise<void | string> {
-		//TODO Should use data request
-		console.log( 'MERGE' );
-		const video: VideoDescriptor = await CaptionsController.descriptionFromRequest( request );
-		console.log( '1' );
-		const text: string =
-			CaptionsController.readFile(
-				( await request.validate( { schema: schema.create( { text: schema.string() } ) } ) ).text
-			).captions.map( ( p ) => p.map( ( x ) => x[ 1 ] ).join( '' ) ).join( '' );
-		console.log( '2' );
-		let captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
-		console.log( '3' );
-		captions = CaptionsController.retextCaptions( captions, text );
-		console.log( '⇒ render' );
-		return view.render( 'captions', { captions, ...video } );
 	}
 
 	/**
@@ -353,7 +336,12 @@ export default class CaptionsController {
 
 	/**
 	 * STRING REQUEST:  Handle the conversion into a srt file
-	 * (See captionsFromRequest() for information about the request formatting.)
+	 * Request parameters:
+	 *     captions:  Captions as [ [ [time,text], [time,text], … ], … ], time being in the format `HH:MM:SS.mmm`, `H:MM:SS.mmm`, `MM:SS.mmm`, or `M:SS.mmm`.
+	 *     title:     Title of the video (string). (Optional.)
+	 *     author:    Author/channel of the video (string). (Optional.)
+	 *     date:      Date of the video (string). (Optional.)
+	 *     url:       URL of the video (string). (Optional.)
 	 */
 	public async exportSrt( { request, response }: HttpContextContract ): Promise<void> {
 		const captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
@@ -402,7 +390,12 @@ export default class CaptionsController {
 
 	/**
 	 * STRING REQUEST:  Create a save file
-	 * (See captionsFromRequest() for information about the request formatting.)
+	 * Request parameters:
+	 *     captions:  Captions as [ [ [time,text], [time,text], … ], … ], time being in the format `HH:MM:SS.mmm`, `H:MM:SS.mmm`, `MM:SS.mmm`, or `M:SS.mmm`.
+	 *     title:     Title of the video (string). (Optional.)
+	 *     author:    Author/channel of the video (string). (Optional.)
+	 *     date:      Date of the video (string). (Optional.)
+	 *     url:       URL of the video (string). (Optional.)
 	 */
 	public async exportSave( { request, response }: HttpContextContract ): Promise<void> {
 		const captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
@@ -418,6 +411,21 @@ export default class CaptionsController {
 				).join( '' )
 			).join( '{:}' )
 		);
+	}
+
+	/**
+	 * ARRAY REQUEST:  Merge the text from a file with the timings of captions.
+	 * Request parameters:
+	 *     captions:  Captions as [ [ [time,text], [time,text], … ], … ], time being in the format `HH:MM:SS.mmm`, `H:MM:SS.mmm`, `MM:SS.mmm`, or `M:SS.mmm`.
+	 *     text:      Text to apply.
+	 */
+	public async mergeWithFile( { request, response }: HttpContextContract ): Promise<void | string> {
+		const text: string =
+			CaptionsController.readFile(
+				( await request.validate( { schema: schema.create( { text: schema.string() } ) } ) ).text
+			).captions.map( ( p ) => p.map( ( x ) => x[ 1 ] ).join( '' ) ).join( '' );
+		let captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
+		return response.send( CaptionsController.retextCaptions( captions, text ) );
 	}
 
 	/**
