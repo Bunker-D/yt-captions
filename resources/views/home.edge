@@ -53,16 +53,16 @@
 	@endif
 	<form id="search" class="middle" action="/prompt" method="GET">
 		<label for="v">Video:</label>
-		<input type="text" id="v" name="v">
+		<input type="text" id="v" name="v" oninput="wrote(this.value)">
 	</form>
 	<div id="upload" class="bottom-btn">
 		<label for="file-upload">
 			<img src="/icons/upload.png">
 		</label>
-		<input id="file-upload" type="file" />
+		<input id="file-upload" type="file" onchange="upload(this.files)"/>
 		<div>Load file</div>
 	</div>
-	<div id="go" class="bottom-btn">
+	<div id="go" class="bottom-btn" onclick="go()">
 		<label>
 			<img src="/icons/video.png">
 		</label>
@@ -76,13 +76,12 @@
 @endif
 
 <script>
-	const topClassList = document.getElementById( 'container' ).classList;
-	document.getElementById( 'v' ).oninput = ( { target } ) => {
-		if ( target.value ) topClassList.add( 'some-input' );
-		else topClassList.remove( 'some-input' );
+	function wrote( value ) {
+		if ( value ) document.getElementById( 'container' ).classList.add( 'some-input' );
+		else document.getElementById( 'container' ).classList.remove( 'some-input' );
 	}
-	document.getElementById( 'file-upload' ).onchange = ( { target } ) => { //TODO better organization
-		if ( ! target.files.length ) return;
+	function upload( files ) {
+		if ( ! files.length ) return;
 		const reader = new FileReader();
 		reader.onload = () => {
 			const form = document.createElement( 'form' );
@@ -96,9 +95,9 @@
 			document.body.appendChild( form );
 			form.submit();
 		}
-		reader.readAsText( target.files[ 0 ] );
+		reader.readAsText( files[ 0 ] );
 	}
-	document.getElementById( 'go' ).onclick = () => {
+	function go() {
 		document.getElementById( 'search' ).submit();
 	}
 </script>
