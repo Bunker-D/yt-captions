@@ -7,9 +7,6 @@
 // import { Response } from '@adonisjs/http-server/build/standalone';
 import Route from '@ioc:Adonis/Core/Route';
 
-//HACK  test route — to be deleted
-Route.get( '/test', 'CaptionsController.test' );
-
 // Home page
 Route.get( '/', async ( { view } ) => view.render( 'home' ) );
 

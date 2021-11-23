@@ -14,17 +14,6 @@ import {
 
 export default class CaptionsController {
 
-	//HACK  test function — to be removed
-	public async test( { response /*view*/ }: HttpContextContract ): Promise<void | string> {
-		let res: string = 'testing';
-		console.log( 'TEST' );
-		// ...
-		// response.header('Content-type', 'application/json')
-		// response.json( res );
-		return response.send( [ 'test', 'me' ] );
-		// return view.render( 'captions', data );
-	}
-
 	/**
 	 * PAGE REQUEST:  Handle requests using the full youtube url and redirect to the video id
 	 */
