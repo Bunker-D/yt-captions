@@ -7,6 +7,7 @@ import {
 	fetchVideo as ytFetchVideo,
 	fetchCaptions as ytFetchCaptions,
 	readSubFile,
+	clearHtml,
 	FetchError,
 	ytData,
 } from 'App/Modules/youtubeFetch';
@@ -53,7 +54,7 @@ export default class CaptionsController {
 	 * PAGE REQUEST:  Create the page for a given video and captions track
 	 */
 	public async fetchCaptions( { request, params, view, response }: HttpContextContract ): Promise<void | string> {
-		let reqData = request.body(); //TODO  Maybe should use a validator?
+		let reqData = request.body();
 		let urls: string[];
 		if ( reqData.url ) {
 			urls = reqData.url.split( '@' );
@@ -232,7 +233,9 @@ export default class CaptionsController {
 	 * @returns {TimedCaptionsParagraph} Created captions
 	 */
 	private static retextCaptions( captions: TimedCaptions, text: string ): TimedCaptions {
-		//TODO clean html characters and tags
+		// Remove formatting HTML from the texts to match  //IMPROVE Handle <i>, <b>, <u> in captions merging
+		captions = captions.map( ( par ) => clearHtml( par, [], { i: null, b: null, u: null, br: null, font: null } ) ); // # <font>
+		text = clearHtml( text, [], { i: null, b: null, u: null, br: null, font: null } ); // # <font>
 		// Build the indices of where timings apply in original captions
 		const paragraphs: number[] = [];
 		const times: string[] = [];
@@ -241,11 +244,12 @@ export default class CaptionsController {
 		let i = 0;
 		for ( let p = 0; p < captions.length; p++ ) {
 			for ( const x of captions[ p ] ) {
+				const t = x[ 1 ].replace( /<\/?[ibu]/gi, '' ).replace( /&lt;/gi, '<' ).replace( /&amp;/gi, '&' ); // # <font>
 				paragraphs.push( p );
 				times.push( x[ 0 ] );
-				captionsText += x[ 1 ];
+				captionsText += t;
 				indices.push( i );
-				i += x[ 1 ].length;
+				i += t.length;
 			}
 		}
 		// Convert those indices to match the provided text
@@ -420,12 +424,12 @@ export default class CaptionsController {
 	 *     text:      Text to apply.
 	 */
 	public async mergeWithFile( { request, response }: HttpContextContract ): Promise<void | string> {
-		const text: string =
+		return response.send( CaptionsController.retextCaptions(
+			await CaptionsController.captionsFromRequest( request ),
 			CaptionsController.readFile(
 				( await request.validate( { schema: schema.create( { text: schema.string() } ) } ) ).text
-			).captions.map( ( p ) => p.map( ( x ) => x[ 1 ] ).join( '' ) ).join( '' );
-		let captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
-		return response.send( CaptionsController.retextCaptions( captions, text ) );
+			).captions.map( ( p ) => p.map( ( x ) => x[ 1 ] ).join( '' ) ).join( '' ),
+		) );
 	}
 
 	/**

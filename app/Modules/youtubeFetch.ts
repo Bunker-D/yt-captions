@@ -2,7 +2,6 @@ import { ResponseContract } from '@ioc:Adonis/Core/Response';
 import { default as youtubedl, YtResponse } from 'youtube-dl-exec';
 import { default as fetch } from 'node-fetch';
 
-
 /**
  * Fetch the useful video data from Youtube.
  * @param {string} id ID of the target video
@@ -148,7 +147,7 @@ function dateReformat( date: string ): string {
  * @param {string} [type] Type or file, i.e. 'vtt' or 'srt'. If not provided: automatically detected.
  * @returns {[string,string][]} Content of the file as a list of [ time, words ]. [] if the input is not a recognized format.
  */
-//IMPROVE readSubFile: Support more than that 
+//IMPROVE readSubFile: Support more formats
 export function readSubFile( content: string, type?: string ): [ string, string ][] {
 	if ( ! content.match( /(^|\n)(\d\d:\d\d:\d\d[.,]\d\d\d) --> \d\d:\d\d:\d\d[.,]\d\d\d/ ) ) return [];
 	// Pre-treatment
@@ -160,7 +159,6 @@ export function readSubFile( content: string, type?: string ): [ string, string 
 				.replace( /(?<=\d\d:\d\d:\d\d),(?=\d\d\d)/g, '.' ) // replace commas in timing with dots…
 				.replace( /\n\d+(?=\n\d\d:\d\d:\d\d\.\d\d\d --> \d\d:\d\d:\d\d\.\d\d\d)/g, '' ); // and remove the potential subtitle index preceding timing lines in srt files.
 	}
-	content = replaceHtmlAmp( content );
 	// Useful regex in reading the captions file
 	const regTimeLine = /^(\d\d:\d\d:\d\d\.\d\d\d) --> \d\d:\d\d:\d\d\.\d\d\d/;
 	const regTimedWord = /<(\d\d:\d\d:\d\d\.\d\d\d)><c>(.+?)<\/c>/g;
@@ -203,52 +201,94 @@ export function readSubFile( content: string, type?: string ): [ string, string 
 		space = captions[ i ][ 1 ][ 0 ] === " ";
 		if ( space ) captions[ i ][ 1 ] = captions[ i ][ 1 ].substr( 1 );
 	}
-	return captions;
+	return clearHtml( captions, [ 'i', 'b', 'u' ], { em: 'i', strong: 'b', br: null, font: null } ); // # <font>
 }
 
 /**
- * Decode &...; and &#...; HTML special characters by their value.
- * @param {string} str String in which characters should be decoded
+ * Decode &...; and &#...; HTML special characters by their value, except for “&” and “<” if not explicitly asked for.
+ * Convert “<” to “&lt;”, except for user-defined HTML tags.
+ * @param {string|[string,string][]} str String or timed captions in which characters should be decoded.
+ * @param {string[]} keepTags HTML tags (lower case) to be kept as such.
+ * @param {[index:string]:string|null} convertTags HTML tags (lower case) to be converted (as keys) and new names to give them (as values). If the provided value is `null`, the tag will be removed.
+ * @param {boolean} convertLt If set to true and if keepTags and convertTags are unused, even “&amp;” and “&lt;” are converted into “&” and “<”.
  * @returns {string} String with decoded characters
  */
- function replaceHtmlAmp( str: string ): string {
-	return str.replace( /&([a-z0-9]+|#([0-9]+));/gi, ( x, m, n ) => {
-		// &#...;
-		if ( n ) return String.fromCharCode( Number( n ) );
-		n = m.toLowerCase();
-		// Most expected characters
-		let c = { nbsp: ' ', quot: '"', apos: "'", amp: '&', lt: '<', gt: '>' }[ n ];
-		if ( c ) return c;
-		// Other case-insentive characters
-		c = {
-			laquo: '«', raquo: '»', ldquo: '“', rdquo: '”', lsquo: '‘', rsquo: '’', sbquo: '‚', bdquo: '„', lsaquo: '‹', rsaquo: '›',
-			iexcl: '¡', cent: '¢', pound: '£', curren: '¤', yen: '¥', brvbar: '¦', sect: '§', uml: '¨', copy: '©', ordf: 'ª',
-			not: '¬', shy: '­', reg: '®', macr: '¯', deg: '°', plusmn: '±', sup2: '²', sup3: '³', acute: '´', micro: 'µ', para: '¶',
-			middot: '·', cedil: '¸', sup1: '¹', ordm: 'º', frac14: '¼', frac12: '½', frac34: '¾', iquest: '¿', times: '×', szlig: 'ß',
-			divide: '÷', yuml: 'ÿ', bull: '•', infin: '∞', permil: '‰', sdot: '⋅', dagger: '†', mdash: '—', perp: '⊥', par: '∥', euro: '€'
-		}[ n ];
-		if ( c ) return c;
-		// Characters with lower and upper case versions
-		c = {
-			agrave: 'Àà', aacute: 'Áá', acirc: 'Ââ', atilde: 'Ãã', auml: 'Ää', aring: 'Åå', aelig: 'Ææ', ccedil: 'Çç',
-			egrave: 'Èè', eacute: 'Éé', ecirc: 'Êê', euml: 'Ëë', igrave: 'Ìì', iacute: 'Íí', icirc: 'Îî', iuml: 'Ïï',
-			eth: 'Ðð', ntilde: 'Ññ', ograve: 'Òò', oacute: 'Óó', ocirc: 'Ôô', otilde: 'Õõ', ouml: 'Öö', oslash: 'Øø',
-			ugrave: 'Ùù', uacute: 'Úú', ucirc: 'Ûû', uuml: 'Üü', yacute: 'Ýý', thorn: 'Þþ',
-			alpha: 'Αα', beta: 'Ββ', gamma: 'Γγ', delta: 'Δδ', epsilon: 'Εε', zeta: 'Ζζ', eta: 'Ηη', theta: 'Θθ',
-			iota: 'Ιι', kappa: 'Κκ', lambda: 'Λλ', mu: 'Μμ', nu: 'Νν', xi: 'Ξξ', omicron: 'Οο', pi: 'Ππ', rho: 'Ρρ',
-			sigma: 'Σσ', tau: 'Ττ', upsilon: 'Υυ', phi: 'Φφ', chi: 'Χχ', psi: 'Ψψ', omega: 'Ωω'
-		}[ n ];
-		if ( c ) return c[ ( m.charCodeAt( 0 ) < 95 ) ? 0 : 1 ];
-		return x;
-	} );
+export function clearHtml(
+	str: string,
+	keepTags?: string[],
+	convertTags?: { [ index: string ]: string | null; },
+	convertLt?: boolean,
+): string;
+export function clearHtml(
+	str: [string,string][],
+	keepTags?: string[],
+	convertTags?: { [ index: string ]: string | null; },
+	convertLt?: boolean,
+): [string,string][];
+export function clearHtml(
+	str: string | [string,string][],
+	keepTags?: string[],
+	convertTags?: { [ index: string ]: string|null },
+	convertLt?: boolean,
+): string | [string,string][] {
+	const tagMap = convertTags ?? {};
+	if ( keepTags ) {
+		for ( const tag of keepTags ) tagMap[ tag ] = tag;
+	}
+	let amp: string = '&amp;';
+	let lt: string = '&lt;';
+	let clearLT!: ( s: string ) => string;
+	if ( Object.keys( tagMap ).length ) {
+		clearLT = ( s: string ): string =>
+			s.replace( /<((\/?)([a-z0-9]+)((?: +[a-z0-9]+(?:=(?:"[^"]*"|'[^']*'|\w*))?)* *\/?>))?/gi,
+				( _: string, lookup: string, slash: string, tag: string, tail: string ): string => {
+					if ( ! lookup ) return '&lt;'
+					const ltag = tag.toLowerCase();
+					if ( ltag in tagMap ) {
+						if ( tagMap[ ltag ] == null ) return '';
+						return '<' + slash + tagMap[ ltag ] + ( ( tail.trimStart() === '>' ) ? '>' : tail );
+					}
+					return '&lt;' + lookup;
+				}
+			);
+	} else {
+		if ( convertLt ) {
+			amp = '&';
+			lt = '<';
+		} else {
+			clearLT = ( s: string ): string => s.replace( /</g, '&lt;' );
+		}
+	}
+	const clearAmp = ( s: string ): string =>
+		s.replace( /&([a-z0-9]+|#([0-9]+));/gi, ( x, m, n ) => {
+			// &#...;
+			if ( n ) return String.fromCharCode( Number( n ) );
+			n = m.toLowerCase();
+			// Most expected characters
+			let c = { nbsp: ' ', quot: '"', apos: "'", amp: amp, lt: lt, gt: '>' }[ n ];
+			if ( c ) return c;
+			// Other case-insentive characters
+			c = {
+				laquo: '«', raquo: '»', ldquo: '“', rdquo: '”', lsquo: '‘', rsquo: '’', sbquo: '‚', bdquo: '„', lsaquo: '‹', rsaquo: '›',
+				iexcl: '¡', cent: '¢', pound: '£', curren: '¤', yen: '¥', brvbar: '¦', sect: '§', uml: '¨', copy: '©', ordf: 'ª',
+				not: '¬', shy: '­', reg: '®', macr: '¯', deg: '°', plusmn: '±', sup2: '²', sup3: '³', acute: '´', micro: 'µ', para: '¶',
+				middot: '·', cedil: '¸', sup1: '¹', ordm: 'º', frac14: '¼', frac12: '½', frac34: '¾', iquest: '¿', times: '×', szlig: 'ß',
+				divide: '÷', yuml: 'ÿ', bull: '•', infin: '∞', permil: '‰', sdot: '⋅', dagger: '†', mdash: '—', perp: '⊥', par: '∥', euro: '€'
+			}[ n ];
+			if ( c ) return c;
+			// Characters with lower and upper case versions
+			c = {
+				agrave: 'Àà', aacute: 'Áá', acirc: 'Ââ', atilde: 'Ãã', auml: 'Ää', aring: 'Åå', aelig: 'Ææ', ccedil: 'Çç',
+				egrave: 'Èè', eacute: 'Éé', ecirc: 'Êê', euml: 'Ëë', igrave: 'Ìì', iacute: 'Íí', icirc: 'Îî', iuml: 'Ïï',
+				eth: 'Ðð', ntilde: 'Ññ', ograve: 'Òò', oacute: 'Óó', ocirc: 'Ôô', otilde: 'Õõ', ouml: 'Öö', oslash: 'Øø',
+				ugrave: 'Ùù', uacute: 'Úú', ucirc: 'Ûû', uuml: 'Üü', yacute: 'Ýý', thorn: 'Þþ',
+				alpha: 'Αα', beta: 'Ββ', gamma: 'Γγ', delta: 'Δδ', epsilon: 'Εε', zeta: 'Ζζ', eta: 'Ηη', theta: 'Θθ',
+				iota: 'Ιι', kappa: 'Κκ', lambda: 'Λλ', mu: 'Μμ', nu: 'Νν', xi: 'Ξξ', omicron: 'Οο', pi: 'Ππ', rho: 'Ρρ',
+				sigma: 'Σσ', tau: 'Ττ', upsilon: 'Υυ', phi: 'Φφ', chi: 'Χχ', psi: 'Ψψ', omega: 'Ωω'
+			}[ n ];
+			if ( c ) return c[ ( m.charCodeAt( 0 ) < 95 ) ? 0 : 1 ];
+			return x;
+		} );
+	const clear: ( s: string ) => string = ( clearLT ) ? ( s => clearAmp( clearLT( s ) ) ) : clearAmp;
+	return ( typeof str === 'string' ) ? clear( str ) : str.map( ( [ t, w ] ) => [ t, clear( w ) ] );
 }
-
-/*TODO  <i>, <b>, <u> vs loading and matching:
-	When loading / reading a vtt file:
-		[ ] <br>, <i>, <b>, <u> should be kept.  (Future improvement: support for <font …>.)
-		[ ] <em> and <strong> should be converted to <i> and <b>.
-		[ ] replaceHtmlAmp should probably not replace < and &. (Return &lt; and &amp; when met to end the function.)
-	When matching, curration should:
-		[ ] Remove the formatting tags <br>, <i>, <b>, <u>.  (Future improvement: support for <font …>.)
-		[ ] Read the remaining &-codes (for < and &)
-*/

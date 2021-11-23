@@ -236,7 +236,7 @@
 	//===========================//
 	//   MENU FUNCTIONALITIES   //
 	//=========================//
-	//TODO prevent update/closing the page?
+	//IMPROVE prevent update/closing the page?
 
 	document.getElementById( 'burger' ).onclick = () => document.getElementById( 'menu' ).classList.toggle( 'menu-off' );
 	function msAccuracy() {
@@ -324,7 +324,7 @@
 				currentBit = [ t, span.innerHTML ];
 				currentPar.push( currentBit );
 			} else { // HTML tag, but not a timed span
-				const tag = [ '', 'i', 'b', 'u' ][ [ 'I', 'B', 'U' ].indexOf( span.tagName ) + 1 ];
+				const tag = [ '', 'i', 'b', 'u' ][ [ 'I', 'B', 'U' ].indexOf( span.tagName ) + 1 ]; // # <font>
 				const start = currentPar.length;
 				for ( const subspan of span.childNodes ) {
 					newBit( subspan );
@@ -375,7 +375,8 @@
 		const nbsp = String.fromCharCode( 160 );
 		const clean = ( el ) => {
 			if ( el.nodeType === 1 ) {
-				if ( ! el.textContent.trim() ) {
+				//IMPROVE should ensure the absence of unsupported HTML tags
+				if ( ! el.textContent ) {
 					if ( el.tagName !== 'BR' ) el.remove();
 					return;
 				}
@@ -591,7 +592,7 @@
 					}
 					const moveToSpan = ( elem ) => {
 						if ( elem.nodeType === 1 ) {
-							const tag = [ '', 'bs', 'i', 'b', 'u' ][ [ 'BS', 'I', 'B', 'U' ].indexOf( elem.tagName ) + 1 ]; // # font
+							const tag = [ '', 'bs', 'i', 'b', 'u' ][ [ 'BS', 'I', 'B', 'U' ].indexOf( elem.tagName ) + 1 ]; // # <font>
 							if ( tag ) {
 								spanContent += '<' + tag + '>';
 								if ( tag === 'bs' ) return;
