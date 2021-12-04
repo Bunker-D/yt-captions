@@ -22,6 +22,7 @@ export async function fetchVideo( id: string ): Promise<ytData> {
 			noCheckCertificate: true,
 			preferFreeFormats: true,
 			youtubeSkipDashManifest: true,
+			skipDownload: true,
 			referer: url,
 		} );
 	} catch ( e ) {
