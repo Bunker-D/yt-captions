@@ -181,13 +181,16 @@ export function readSubFile( content: string, type?: string ): [ string, string 
 				captions.push( [ '', '' ] ); // Make some room for the first word
 				captions[ i ] = [ time,
 					' ' +
-					line.replace( regTimedWord, ( _, t, w ) => { // Read each timed word, leaving the first wors
+					line.replace( regTimedWord, ( _, t, w ) => { // Read each timed word, leaving the first words
 						if ( w ) captions.push( [ t, w ] );
 						return '';
 					} ),
 				]; // Store the remaining first word
 				last = line.replace( regTimedWord, '$2' ); // Store what was just read
-			} else if ( line !== last ) captions.push( [ time, ' ' + line ] ); // It is a line without timing, which might be a double
+			} else if ( line !== last ) { // A line without timing might be a double.
+				captions.push( [ time, ' ' + line ] ); // If not, add it…
+				last = line; // and remember.
+			}
 		}
 	}
 	if ( ! captions.length ) return []; // No text, stop there
