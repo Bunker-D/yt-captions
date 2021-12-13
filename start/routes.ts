@@ -10,6 +10,9 @@ import Route from '@ioc:Adonis/Core/Route';
 // Home page
 Route.get( '/', async ( { view } ) => view.render( 'home' ) );
 
+// HACK Test
+Route.get( '/test', 'CaptionsController.test' );
+
 // Redirect the request from the home page search bar
 Route.get( '/prompt', ( { request, response } ) => response.redirect( '/' + request.input( 'v' ) ?? '' ) );
 

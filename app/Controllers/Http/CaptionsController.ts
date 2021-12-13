@@ -14,6 +14,43 @@ import {
 
 export default class CaptionsController {
 
+
+	// HACK  Test function
+	public async test( { response }: HttpContextContract ): Promise<void | string> {
+		const subUrl = "https://www.youtube.com/api/timedtext?sparams=ip,ipbits,expire,v,asr_langs,caps,exp,xoaf&lang=en&expire=1639376486&caps=asr&fmt=vtt&v=efA6B2EKLN4&hl=en&key=yt8&ipbits=0&asr_langs=de,en,es,fr,id,it,ja,ko,nl,pt,ru,tr,vi&xoaf=4&ip=0.0.0.0&signature=A4574EF1FD96A4B384C641554B66913EA3F225C1.4185B98143567088F426AD8B5A1DDBA6ABEDC230&kind=asr&exp=xftt,xctw&";
+		const subs = await ytFetchCaptions( subUrl );
+		let times: string[] = [];
+		let decoded: string = '';
+		const repetitions: [string,string[]][] = [];
+		let w_!: string;
+		for ( const [ t, w ] of subs ) {
+			if ( w === w_ ) {
+				times.push( t )
+			} else {
+				let heads: string[] = [ ' ' ];
+				if ( times.length > 1 ) {
+					heads = times.map( () => '├' );
+					heads[ 0 ] = '┌';
+					heads[ heads.length - 1 ] = '└';
+					if ( times.length > 2 ) repetitions.push( [ w_, times ] );
+				} else heads = [ ' ' ];
+				for ( let i = 0; i < times.length; i++ ) decoded += ` ${ heads[ i ] } ${ times[ i ] } → ${ w_ }\n`;
+				w_ = w;
+				times = [ t ];
+			}
+		}
+		const maxLen = Math.max( ...repetitions.map( ( [ w, _ ] ) => w.length ) );
+		const line = '—'.repeat( maxLen + 4 + repetitions[ 0 ][ 1 ][ 0 ].length ) + '\n';
+		let report = line;
+		for ( const [ w, t ] of repetitions ) {
+			report += '"' + w + '": ' + ' '.repeat( maxLen - w.length ) + t[ 0 ] + '\n';
+			for ( let i = 1; i < t.length; i++ ) report += ' '.repeat( 4 + maxLen ) + t[ i ] + '\n';
+			report += line;
+		}
+		console.log( report );
+		response.send( decoded );
+	}
+
 	/**
 	 * PAGE REQUEST:  Handle requests using the full youtube url and redirect to the video id
 	 */
@@ -471,8 +508,25 @@ interface VideoContent extends VideoDescriptor {
 	captions: TimedCaptions,
 }
 
-/*IMPROVE Support <font …> tags
+/*IMPROVE  Support <font …> tags
 	→ Search for “# <font>” for relevant locations 
 */
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
+*/
+/*IMPROVE  Auto-capitalize option:
+	Toggable option to automatically capitalize the following letter when a . is added tout the text.
+	Also allows to capitalize all “i” without any letter around.
+*/
+/*IMPROVE  Dark theme
+*/
+/*IMPROVE  Optional video integration
+	Synchronization: from video to captions, and captions to video.
+*/
+/*IMPROVE  Consider making a browser extension
+	It might even add the editor (with video sync) in the Youtube page.
+*/
+/*BUG  Triple words
+	The program put triple words where the automatic captions do not.
+*/
+/*IMPROVE  Replace occurrences substr (deprecated)
 */
