@@ -740,6 +740,58 @@
 		timeEl.focus();
 	} );
 
+	//===============================================//
+	//   AUTOMATIC CAPITALIZE FOLLOWING CHARACTER   //
+	//=============================================//
+
+	const capitalizeIfNeeded = ( e ) => {
+		if ( '.!?'.indexOf( e.key ) < 0 ) return;
+		const sel = window.getSelection();
+		if ( sel.rangeCount !== 1 ) return;  // Abort if no selection or cursor
+		const range = sel.getRangeAt( 0 );
+		if ( ! range.collapsed ) false;  // Abort if selection instead of a single cursor
+		const editor = document.getElementById( 'captions' );
+		if ( ! editor.contains( range.startContainer ) ) return;  // Abort if cursor not in editor
+
+		let node = range.startContainer;
+		let text = node.textContent.substring( range.startOffset );
+		let charMatch = text.match( /\w/ );
+		if ( charMatch ) {
+			const cap = charMatch[ 0 ].toUpperCase();
+			if ( charMatch[ 0 ] !== cap ) {
+				node.textContent = node.textContent.substring( 0, range.startOffset + charMatch.index ) + cap + text.substring( charMatch.index + 1 );
+			}
+		} else {
+			let firstChar = ( n ) => {
+				if ( n.nodeType === 3 ) {
+					node = n;
+					text = n.textContent;
+					charMatch = text.match( /\w/ );
+				} else if ( n.nodeType === 1 ) {
+					for ( const c of n.childNodes ) {
+						firstChar( c );
+						if ( charMatch ) return;
+					}
+				}
+			};
+			while ( !charMatch ) {
+				let next = node.nextSibling;
+				while ( !next ) {
+					node = node.parentNode;
+					if ( node === editor ) return;
+					next = node.nextSibling;
+				}
+				node = next;
+				firstChar( node );
+			}
+			const cap = charMatch[ 0 ].toUpperCase();
+			if ( charMatch[ 0 ] !== cap ) {
+				node.textContent = text.substring( 0, charMatch.index ) + cap + text.substring( charMatch.index + 1 );
+			}
+		}
+	}
+	document.getElementById( 'captions' ).addEventListener( 'keypress', capitalizeIfNeeded );
+
 	// Known issue: Slow to delete a lot of text.
 	//IMPROVE Maybe cuts (<p>) every N words if there is one single paragraph would be a good way to improve the speed
 </script>
