@@ -448,7 +448,7 @@
 		if ( sel.rangeCount !== 1 ) return;
 		const range = sel.getRangeAt( 0 );
 		const editor = document.getElementById( 'captions' );
-		if ( ! ( editor.contains( range.startContainer ) && editor.contains( range.startContainer ) ) ) return;
+		if ( ! ( editor.contains( range.startContainer ) && editor.contains( range.endContainer ) ) ) return;
 		e.preventDefault();
 		// Get the data to paste into a div to work on it
 		const clip = document.createElement( 'div' );
