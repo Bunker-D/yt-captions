@@ -302,7 +302,7 @@
 		document.body.removeChild( element );
 	}
 	
-	/** Capitalize all isoliated “i” in the editor. */  //TODO  Calling button
+	/** Capitalize all isoliated “i” in the editor. */
 	function capitalizeSoloI() {
 		const editor = document.getElementById( 'captions' );
 		let lastChar = '';
@@ -856,11 +856,6 @@
 			document.getElementById( 'captions' ).removeEventListener( 'keypress', capitalizeIfNeeded );
 		}
 	}
-
-	//TODO  Button to remove/add the listener
-
-	// Known issue: Slow to delete a lot of text.
-	//IMPROVE Maybe cuts (<p>) every N words if there is one single paragraph would be a good way to improve the speed
 </script>
 
 </body>

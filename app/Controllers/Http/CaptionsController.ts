@@ -521,10 +521,6 @@ interface VideoContent extends VideoDescriptor {
 */
 /*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
 */
-/*IMPROVE  Auto-capitalize option:
-	Toggable option to automatically capitalize the following letter when a . is added tout the text.
-	Also allows to capitalize all “i” without any letter around.
-*/
 /*IMPROVE  Dark theme
 */
 /*IMPROVE  Optional video integration
