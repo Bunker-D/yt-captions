@@ -527,5 +527,3 @@ interface VideoContent extends VideoDescriptor {
 /*IMPROVE  Consider making a browser extension
 	It might even add the editor (with video sync) in the Youtube page.
 */
-/*IMPROVE  Replace occurrences substr (deprecated)
-*/
