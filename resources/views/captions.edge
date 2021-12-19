@@ -12,7 +12,7 @@
 			z-index: 90;
 			top: 16px;
 			left: 11px;
-			max-height: 270px;
+			max-height: 380px;
 			transition: max-height .15s;
 			overflow: hidden;
 		}
@@ -33,11 +33,11 @@
 			vertical-align: middle;
 			margin: 0 9px;
 			max-width: 0;
-			transition: max-width .2s;
+			transition: max-width .4s;
 			overflow: hidden;
 			background-color: white;
 		}
-		.menu-item:hover .menu-text { max-width: 12em; }
+		.menu-item:hover .menu-text { max-width: 13em; }
 
 		main {
 			max-width: 850px;
@@ -134,9 +134,10 @@
 			transform: skew(60deg, -30deg);
 		}
 
-		#ms-img-no { display: none; }
-		.ms-accuracy #ms-img-no { display: block; }
-		.ms-accuracy #ms-img-yes { display: none; }
+		#ms-img { display: none; }
+		#ms-img-no { display: block; }
+		.ms-accuracy #ms-img { display: block; }
+		.ms-accuracy #ms-img-no { display: none; }
 		.ms-accuracy span[data-time]:hover::after,
 		.ms-accuracy p > span[data-time]:first-child::after,
 		.ms-accuracy p > :first-child > span[data-time]:first-child::after,
@@ -144,6 +145,11 @@
 		.ms-accuracy p > :first-child > :first-child > :first-child > span[data-time]:first-child::after {
 			content: attr(data-time-ms);
 		}
+
+		#dotcap { display: none; }
+		#dotcap-no { display: block; }
+		.auto-capitalize #dotcap { display: block; }
+		.auto-capitalize #dotcap-no { display: none; }
 
 		#time-editor {
 			font-family: monospace;
@@ -209,7 +215,7 @@
 		<img src="/icons/burger.png">
 	</div>
 	<div class="menu-item" onclick="msAccuracy()">
-		<img src="/icons/ms-yes.png" id="ms-img-yes"><img src="/icons/ms-no.png" id="ms-img-no">
+		<img src="/icons/ms.png" id="ms-img"><img src="/icons/ms-no.png" id="ms-img-no">
 		<div class="menu-text">Switch&nbsp;time&nbsp;accuracy&nbsp;&nbsp;</div>
 	</div>
 	<div class="menu-item">
@@ -226,6 +232,14 @@
 	<div class="menu-item" onclick="exportCaptions()">
 		<img src="/icons/Export.png">
 		<div class="menu-text">Export&nbsp;subtitles&nbsp;&nbsp;</div>
+	</div>
+	<div class="menu-item" onclick="toggleCapitalize()">
+		<img src="/icons/dotcap.png" id="dotcap"><img src="/icons/dotcap-no.png" id="dotcap-no">
+		<div class="menu-text">Automatic&nbsp;capital&nbsp;letters&nbsp;&nbsp;</div>
+	</div>
+	<div class="menu-item" onclick="capitalizeSoloI()">
+		<img src="/icons/icap.png">
+		<div class="menu-text">Capitalize&nbsp;isolated&nbsp;“i”'s&nbsp;&nbsp;</div>
 	</div>
 	{{-- //IMPROVE italic, bold, underlined, font color --}}
 </div>
@@ -288,6 +302,48 @@
 		document.body.removeChild( element );
 	}
 	
+	/** Capitalize all isoliated “i” in the editor. */  //TODO  Calling button
+	function capitalizeSoloI() {
+		const editor = document.getElementById( 'captions' );
+		let lastChar = '';
+		let bufferedNode;
+		const regLetter = /\p{L}/u;
+		const soloi = /(^|[^\p{L}])(?:i)($|[^\p{L}])/gu;
+		const capitaliseI = ( node ) => {
+			if ( node.nodeType === 3 ) {
+				// For text nodes…
+				const text = node.textContent;
+				if ( ! text ) return;
+				// Capitalize closing i of the previous text node if need be.
+				if ( bufferedNode ) {
+					if ( ! text[ 0 ].match( regLetter ) ) {
+						bufferedNode.textContent = bufferedNode.textContent.substring( 0, bufferedNode.textContent - 1 ) + 'I';
+					}
+					bufferedNode = undefined;
+				}
+				// Replace (or store) solo i's
+				if ( text.match( soloi ) ) {
+					node.textContent = text.replace( soloi, ( m, pre, post ) => {
+						if ( ( ! pre ) && lastChar.match( regLetter ) ) return m;
+						if ( ! post ) {
+							bufferedNode = node;
+							return m;
+						}
+						return pre + 'I' + post;
+					} );
+				}
+				// Remember last character
+				lastChar = text[ text.length - 1 ];
+			} else if ( node.nodeType === 1 ) {
+				for ( const child of node.childNodes ) capitaliseI( child )
+			}
+		}
+		for ( const par of editor.children ) {
+			lastChar = '';
+			bufferedNode = undefined;
+			capitaliseI( par );
+		}
+	}
 
 	//=======================//
 	//   USEFUL FUNCTIONS   //
@@ -495,7 +551,6 @@
 		for ( let k = toPaste.length; k--; ) {
 			range.insertNode( toPaste[ k ] );
 		}
-		//IMPROVE Pasting: move writing head to after the pasted text + be able to Ctrl+Z
 	} );
 
 	//==================================//
@@ -744,7 +799,7 @@
 	//   AUTOMATIC CAPITALIZE FOLLOWING CHARACTER   //
 	//=============================================//
 
-	const capitalizeIfNeeded = ( e ) => {
+	function capitalizeIfNeeded( e ) {
 		if ( '.!?'.indexOf( e.key ) < 0 ) return;
 		const sel = window.getSelection();
 		if ( sel.rangeCount !== 1 ) return;  // Abort if no selection or cursor
@@ -791,6 +846,18 @@
 		}
 	}
 	document.getElementById( 'captions' ).addEventListener( 'keypress', capitalizeIfNeeded );
+	document.body.classList.add( 'auto-capitalize' );
+
+	function toggleCapitalize() {
+		document.body.classList.toggle( 'auto-capitalize' );
+		if ( document.body.classList.contains( 'auto-capitalize' ) ) {
+			document.getElementById( 'captions' ).addEventListener( 'keypress', capitalizeIfNeeded );
+		} else {
+			document.getElementById( 'captions' ).removeEventListener( 'keypress', capitalizeIfNeeded );
+		}
+	}
+
+	//TODO  Button to remove/add the listener
 
 	// Known issue: Slow to delete a lot of text.
 	//IMPROVE Maybe cuts (<p>) every N words if there is one single paragraph would be a good way to improve the speed
