@@ -413,7 +413,7 @@
 			let value = document.getElementById( 'video-' + key );
 			if ( value ) {
 				value = value.textContent.trim();
-				if ( value.endsWith( ',' ) ) value = value.substr( 0, value.length - 1 ).trim();
+				if ( value.endsWith( ',' ) ) value = value.substring( 0, value.length - 1 ).trim();
 				if ( value ) res[ key ] = value;
 			}
 		}
@@ -439,8 +439,8 @@
 				for ( const e of el.childNodes ) clean( e );
 			} else if ( el.nodeType === 3 ) {
 				let s = el.textContent;
-				if ( s[ 0 ] === nbsp ) s = ' ' + s.substr( 1 );
-				if ( s[ s.length - 1 ] === nbsp ) s = s.substr( 0, s.length - 1 ) + ' ';
+				if ( s[ 0 ] === nbsp ) s = ' ' + s.substring( 1 );
+				if ( s[ s.length - 1 ] === nbsp ) s = s.substring( 0, s.length - 1 ) + ' ';
 				el.textContent = s.replace( /(?<=[«({\[]) | (?=[»)}\]:;!?])/g, nbsp );
 			}
 		}

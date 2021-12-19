@@ -177,11 +177,11 @@ export default class CaptionsController {
 		if ( match && ( match.index === 0 || ( content[ 0 ] === '{' && content[ 2 ] === '}' ) ) ) {
 			if ( match.index ) {
 				const map = { T: 'title', A: 'author', D: 'date', U: 'url', I: 'id' };
-				const head = content.substr( 0, match.index );
+				const head = content.substring( 0, match.index );
 				for ( const m of head.matchAll( /{([A-Z])}((?:[^{]|{\/)+)/g ) ) {
 					if ( m[ 1 ] in map ) video[ map[ m[ 1 ] ] ] = m[ 2 ].replace( /{\//g, '{' );
 				}
-				content = content.substr( match.index );
+				content = content.substring( match.index );
 			}
 			let t: string = ''; // timing of the current timed bit (i.e. last timing met)
 			let i: number = 0; // start index of the current timed bit
@@ -338,7 +338,7 @@ export default class CaptionsController {
 					}
 				}
 				retimed[ i + 1 ][ 1 ] = m[ 0 ] + retimed[ i + 1 ][ 1 ];
-				str = str.substr( 0, str.length - m[ 0 ].length );
+				str = str.substring( 0, str.length - m[ 0 ].length );
 				retimed[ i ][ 1 ] = str;
 			}
 		}
@@ -382,14 +382,14 @@ export default class CaptionsController {
 	public async exportSrt( { request, response }: HttpContextContract ): Promise<void> {
 		const captions: TimedCaptions = await CaptionsController.captionsFromRequest( request );
 		let k = captions[ 0 ][ 0 ][ 0 ].length;
-		const prefix = '\n' + ( '00:00:00'.substr( 0, 12 - k ) );
+		const prefix = '\n' + ( '00:00:00'.substring( 0, 12 - k ) );
 		const commaIdx = k - 4;
 		const toSec: ( s: string ) => number =
-			( k === 12 ) ? ( ( s ) => Number( s.substr( 0, 2 ) ) * 3600 + Number( s.substr( 3, 2 ) ) * 60 + Number( s.substr( 6 ) ) )
-				: ( k === 11 ) ? ( ( s ) => Number( s[ 0 ] ) * 3600 + Number( s.substr( 2, 2 ) ) * 60 + Number( s.substr( 5 ) ) )
-				: ( k === 9 ) ? ( ( s ) => Number( s.substr( 0, 2 ) ) * 60 + Number( s.substr( 3 ) ) )
-				: ( k === 8 ) ? ( ( s ) => Number( s[ 0 ] ) * 60 + Number( s.substr( 2 ) ) )
-				: Number;
+			( k === 12 ) ? ( ( s ) => Number( s.substring( 0, 2 ) ) * 3600 + Number( s.substring( 3, 5 ) ) * 60 + Number( s.substring( 6 ) ) )
+				: ( k === 11 ) ? ( ( s ) => Number( s[ 0 ] ) * 3600 + Number( s.substring( 2, 4 ) ) * 60 + Number( s.substring( 5 ) ) )
+				: ( k === 9 ) ? ( ( s ) => Number( s.substring( 0, 2 ) ) * 60 + Number( s.substring( 3 ) ) )
+				: ( k === 8 ) ? ( ( s ) => Number( s[ 0 ] ) * 60 + Number( s.substring( 2 ) ) )
+			: Number;
 		const d2: ( n: number ) => string = ( n ) => ( n < 10 ) ? ( '0' + String( n ) ) : String( n );
 		const toStr: ( t: number ) => string = ( t ) => {
 			t *= 1000;
@@ -409,7 +409,7 @@ export default class CaptionsController {
 		for ( const paragraph of captions ) {
 			tStart_ = paragraph[ 0 ][ 0 ];
 			if ( text ) {
-				srt += ( k++ ) + prefix + tStart.substr( 0, commaIdx ) + ',' + tStart.substr( commaIdx + 1 ) + ' --> ' + ( ( toSec( tStart_ ) < tEnd ) ? tStart_ : toStr( tEnd ) ) + '\n' + text + '\n\n';
+				srt += ( k++ ) + prefix + tStart.substring( 0, commaIdx ) + ',' + tStart.substring( commaIdx + 1 ) + ' --> ' + ( ( toSec( tStart_ ) < tEnd ) ? tStart_ : toStr( tEnd ) ) + '\n' + text + '\n\n';
 			}
 			tStart = tStart_;
 			tEnd = toSec( paragraph[ paragraph.length - 1 ][ 0 ] ) + timeWords( paragraph[ paragraph.length - 1 ][ 1 ] );
@@ -420,7 +420,7 @@ export default class CaptionsController {
 					.replace( /<\/(?<tag>[ibu])><\k<tag>>/g, '' );  // Merge successive <i>, <b> or <u> tags
 			// # <font>
 		}
-		srt += ( k++ ) + prefix + tStart.substr( 0, commaIdx ) + ',' + tStart.substr( commaIdx + 1 ) + ' --> ' + toStr( tEnd ) + '\n' + text + '\n';
+		srt += ( k++ ) + prefix + tStart.substring( 0, commaIdx ) + ',' + tStart.substring( commaIdx + 1 ) + ' --> ' + toStr( tEnd ) + '\n' + text + '\n';
 		return response.send( srt );
 	}
 
@@ -518,8 +518,6 @@ interface VideoContent extends VideoDescriptor {
 
 /*IMPROVE  Support <font …> tags
 	→ Search for “# <font>” for relevant locations 
-*/
-/*IMPROVE  Settings: Toggle ms accuracy for paragraph time stamps.
 */
 /*IMPROVE  Dark theme
 */

@@ -76,11 +76,11 @@ export default function matchIndices( fromText: string, toText: string, indices:
 function getMatches( a: string, b: string, maxOffset: number ): [ number, number, number ][] {
 	let [ i, j, n ] = longestMatch( a, b, maxOffset );
 	if ( n ) {
-		const left = ( i && j ) ? getMatches( a.substr( 0, i ), b.substr( 0, j ), maxOffset ) : [];
+		const left = ( i && j ) ? getMatches( a.substring( 0, i ), b.substring( 0, j ), maxOffset ) : [];
 		left.push( [ i, j, n ] );
 		i += n;
 		j += n;
-		const right = ( i < a.length && j < b.length ) ? getMatches( a.substr( i ), b.substr( j ), maxOffset ) : [];
+		const right = ( i < a.length && j < b.length ) ? getMatches( a.substring( i ), b.substring( j ), maxOffset ) : [];
 		for ( let k = right.length; k--; ) {
 			right[ k ][ 0 ] += i;
 			right[ k ][ 1 ] += j;
@@ -148,11 +148,11 @@ function longestMatch( a: string, b: string, maxOffset: number ): [number,number
 			let aOver: string, bOver: string; // Overlapping parts of a and b after ofset (Thanks to the use of nOver, tails can be kept.)
 			let nOver: number; // Length of the overlap
 			if ( oNeg ) {
-				bOver = b.substr( oAbs );
+				bOver = b.substring( oAbs );
 				aOver = a;
 				nOver = ( bOver.length < aLen ) ? bOver.length : aLen;
 			} else {
-				aOver = a.substr( oAbs );
+				aOver = a.substring( oAbs );
 				bOver = b;
 				nOver = ( aOver.length < bLen ) ? aOver.length : bLen;
 			}

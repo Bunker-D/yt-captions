@@ -134,9 +134,9 @@ interface YtResponseExtended extends YtResponse {
 function dateReformat( date: string ): string {
 	if ( typeof date === 'string' && date.match( /^\d\d\d\d\d\d\d\d$/ ) ) {
 		return (
-			[ 'Jan. ', 'Feb. ', 'March ', 'Apr. ', 'May ', 'June ', 'July ', 'Aug. ', 'Sept. ', 'Oct. ', 'Nov. ', 'Dec. ' ][ Number( date.substr( 4, 2 ) ) - 1 ] +
+			[ 'Jan. ', 'Feb. ', 'March ', 'Apr. ', 'May ', 'June ', 'July ', 'Aug. ', 'Sept. ', 'Oct. ', 'Nov. ', 'Dec. ' ][ Number( date.substring( 4, 6 ) ) - 1 ] +
 			( Number( date.charAt( 6 ) ) || '' ) + date.charAt( 7 ) + ', ' +
-			date.substr( 0, 4 )
+			date.substring( 0, 4 )
 		);
 	}
 	return '';
@@ -194,16 +194,16 @@ export function readSubFile( content: string, type?: string ): [ string, string 
 		}
 	}
 	if ( ! captions.length ) return []; // No text, stop there
-	captions[ 0 ][ 1 ] = captions[ 0 ][ 1 ].substr( 1 ); // Remove the spaces added in front of the first line
+	captions[ 0 ][ 1 ] = captions[ 0 ][ 1 ].substring( 1 ); // Remove the spaces added in front of the first line
 	// Strip the timings from excessive front characters + move the spaces (always after words)
 	const zeroes = captions[ captions.length - 1 ][ 0 ].match( /^0*:?0?/ );
 	const s = ( zeroes ) ? zeroes[ 0 ].length : 0;
 	let space = false;
 	for ( let i = captions.length; i--; ) {
-		captions[ i ][ 0 ] = captions[ i ][ 0 ].substr( s );
+		captions[ i ][ 0 ] = captions[ i ][ 0 ].substring( s );
 		if ( space ) captions[ i ][ 1 ] += " ";
 		space = captions[ i ][ 1 ][ 0 ] === " ";
-		if ( space ) captions[ i ][ 1 ] = captions[ i ][ 1 ].substr( 1 );
+		if ( space ) captions[ i ][ 1 ] = captions[ i ][ 1 ].substring( 1 );
 	}
 	return clearHtml( captions, [ 'i', 'b', 'u' ], { em: 'i', strong: 'b', br: null, font: null } ); // # <font>
 }
