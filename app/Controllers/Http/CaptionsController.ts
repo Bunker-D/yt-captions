@@ -15,15 +15,8 @@ import {
 export default class CaptionsController {
 
 	// HACK  Test function
-	public async test( { response }: HttpContextContract ): Promise<void | string> {
-		const subUrl = "https://www.youtube.com/api/timedtext?lang=en&xoaf=4&caps=asr&expire=1639398768&kind=asr&ip=0.0.0.0&v=E4CI2vk3ugk&signature=50BDD60BAE42B5E859F3B690D8DD32265A11B71A.58621DA56A4AE37DD512C3E063430185B306E9E6&asr_langs=de%2Cen%2Ces%2Cfr%2Cid%2Cit%2Cja%2Cko%2Cnl%2Cpt%2Cru%2Ctr%2Cvi&hl=en&ipbits=0&fmt=vtt&sparams=ip%2Cipbits%2Cexpire%2Cv%2Casr_langs%2Ccaps%2Cexp%2Cxoaf&exp=xftt%2Cxctw&key=yt8";
-		const subs = [ await ytFetchCaptions( subUrl ) ];
-		const text = subs[ 0 ].map( ( [ _, w ] ) => w ).join( '' );
-		CaptionsController.cutToBits( subs );
-		const nText = subs.map( ( par ) => par.map( ( [ _, w ] ) => w ).join( '' ) ).join( '' );
-		console.log( `Cut in ${subs.length} paragraphs.` );
-		console.log( text === nText );
-		response.send( 'done' );
+	public async test( { view }: HttpContextContract ): Promise<void | string> {
+		return view.render( 'test' );
 	}
 
 	/**

@@ -2,6 +2,19 @@
 <link rel="icon" href="yt-captions.ico" type="image/x-icon"> 
 <link rel="shortcut icon" href="yt-captions.ico" type="image/x-icon">
 <style>
+	:root {
+		--color-bg: #fff;
+		--color-txt: #333;
+		--color-pop: #dc0000;
+		--color-sec: #4d98fc;
+	}
+	body.dark {
+		--color-bg: #222;
+		--color-txt: #dcdcdc;
+		--color-pop: #8175fe;
+		--color-sec: #4d98fc;
+	}
+
 	* {
 		margin: 0;
 		padding: 0;
@@ -10,14 +23,15 @@
 	html, body {
 		font-family: 'Poppins', sans-serif;
 		height: 100vh;
-		color: #333;
+		color: var(--color-txt);
+		background-color: var(--color-bg);
 		position: relative;
 		font-size: 19px;
 	}
 
 	body:before {
 		content: '';
-		background: #dc0000;
+		background: var(--color-pop);
 		top: 0;
 		left: 0;
 		right: 0;
@@ -27,7 +41,7 @@
 	}
 
 	.error {
-		color: #dc0000;
+		color: var(--color-pop);
 		font-size: 1.7em;
 		font-weight: bold;
 		border: 5px solid;
