@@ -12,7 +12,7 @@
 			z-index: 90;
 			top: 16px;
 			left: 11px;
-			max-height: 380px;
+			max-height: 427px;
 			transition: max-height .15s;
 			overflow: hidden;
 		}
@@ -26,7 +26,7 @@
 			width: 35px;
 			height: 35px;
 			margin: 9px;
-			background-color: white;
+			background-color: var(--color-bg);
 		}
 		.menu-text {
 			display: table-cell;
@@ -35,7 +35,7 @@
 			max-width: 0;
 			transition: max-width .4s;
 			overflow: hidden;
-			background-color: white;
+			background-color: var(--color-bg);
 		}
 		.menu-item:hover .menu-text { max-width: 13em; }
 
@@ -234,6 +234,10 @@
 	<div class="menu-item" onclick="capitalizeSoloI()">
 		@!svgICap()
 		<div class="menu-text">Capitalize&nbsp;isolated&nbsp;“i”'s&nbsp;&nbsp;</div>
+	</div>
+	<div class="menu-item" onclick="toggleDarkTheme()">
+		@!svgTheme()
+		<div class="menu-text">Toggle&nbsp;dark&nbsp;theme&nbsp;&nbsp;</div>
 	</div>
 	{{-- //IMPROVE italic, bold, underlined, font color --}}
 </div>
@@ -850,6 +854,9 @@
 		} else {
 			document.getElementById( 'captions' ).removeEventListener( 'keypress', capitalizeIfNeeded );
 		}
+	}
+	function toggleDarkTheme() {
+		document.body.classList.toggle( 'dark' );
 	}
 </script>
 

@@ -1,0 +1,21 @@
+@set( 'uniqueID', uniqueID || 'theme-clip-ID' )
+<svg viewBox="0 0 426 426" preserveAspectRatio="xMinYMin meet" version="1.1" xmlns="http://www.w3.org/2000/svg" transform="rotate(-16)">
+	<defs>
+		<clipPath id="{{ uniqueID }}-1">
+			<path d="M 274 61 c -84 0, -152 68, -152 152 c 0 84, 68 152, 152 152 H 0 V 61 Z"/>
+		</clipPath>
+		<clipPath id="{{ uniqueID }}-2">
+			<circle cx="158" cy="213" r="150"/>
+		</clipPath>
+		<clipPath id="{{ uniqueID }}-3">
+			<circle cx="274" cy="213" r="107"/>
+		</clipPath>
+	</defs>
+	<circle cx="158" cy="213" r="135" fill="none" class="icon-stroke" stroke-width="30" clip-path="url(#{{ uniqueID }}-1)"/>
+	<circle cx="274" cy="213" r="152" fill="none" class="icon-stroke" stroke-width="30" clip-path="url(#{{ uniqueID }}-2)"/>
+	<circle cx="158" cy="213" r="135" fill="none" class="icon-stroke" stroke-width="30" clip-path="url(#{{ uniqueID }}-3)"/>
+	<line class="icon-stroke strike" x1="348" y1="213" x2="420" y2="213" stroke-width="30" transform="rotate(+30,158,216)"/>
+	<line class="icon-stroke strike" x1="348" y1="213" x2="420" y2="213" stroke-width="30" transform="rotate(+10,158,216)"/>
+	<line class="icon-stroke strike" x1="348" y1="213" x2="420" y2="213" stroke-width="30" transform="rotate(-10,158,216)"/>
+	<line class="icon-stroke strike" x1="348" y1="213" x2="420" y2="213" stroke-width="30" transform="rotate(-30,158,216)"/>
+</svg>
