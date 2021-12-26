@@ -298,7 +298,7 @@
 	}
 	
 	/** Capitalize all isoliated “i” in the editor. */
-	function capitalizeSoloI() {  // BUG  Absorbs the words before “i”!
+	function capitalizeSoloI() {  // BUG Absorbs the words before “i”!
 		const editor = document.getElementById( 'captions' );
 		let lastChar = '';
 		let bufferedNode;
@@ -312,7 +312,7 @@
 				// Capitalize closing i of the previous text node if need be.
 				if ( bufferedNode ) {
 					if ( ! text[ 0 ].match( regLetter ) ) {
-						bufferedNode.textContent = bufferedNode.textContent.substring( 0, bufferedNode.textContent - 1 ) + 'I';
+						bufferedNode.textContent = bufferedNode.textContent.substring( 0, bufferedNode.textContent.length - 1 ) + 'I';
 					}
 					bufferedNode = undefined;
 				}
@@ -322,6 +322,7 @@
 						if ( ( ! pre ) && lastChar.match( regLetter ) ) return m;
 						if ( ! post ) {
 							bufferedNode = node;
+							// throw node;
 							return m;
 						}
 						return pre + 'I' + post;
