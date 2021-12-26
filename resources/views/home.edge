@@ -23,7 +23,7 @@
 			margin: 2.5em auto 0 auto;
 			cursor: pointer;
 		}
-		.bottom-btn img {
+		.bottom-btn svg {
 			width: 45px;
 			margin: 0.1em auto;
 		}
@@ -43,7 +43,7 @@
 
 <main>
 <div id="container">
-	<img src="/yt-captions.png">
+	@!svgLogo()
 	@if( error )
 		<div class="error"
 			@if( errorDetails )
@@ -57,14 +57,14 @@
 	</form>
 	<div id="upload" class="bottom-btn">
 		<label for="file-upload">
-			<img src="/icons/upload.png">
+			@!svgUpload()
 		</label>
 		<input id="file-upload" type="file" onchange="upload(this.files)"/>
 		<div>Load file</div>
 	</div>
 	<div id="go" class="bottom-btn" onclick="go()">
 		<label>
-			<img src="/icons/video.png">
+			@!svgYoutube()
 		</label>
 		<div>Go</div>
 	</div>

@@ -23,7 +23,7 @@
 			line-height: 0;
 			display: table;
 		}
-		.menu-item img {
+		.menu-item svg {
 			width: 35px;
 			height: 35px;
 			margin: 9px;
@@ -51,7 +51,7 @@
 			display: flex;
 			padding: 2em 0 ;
 		}
-		img {
+		svg {
 			width: 20%;
 			max-width: 4.5em;
 			margin: .4em 1em 0 0;
@@ -135,10 +135,7 @@
 			transform: skew(60deg, -30deg);
 		}
 
-		#ms-img { display: none; }
-		#ms-img-no { display: block; }
-		.ms-accuracy #ms-img { display: block; }
-		.ms-accuracy #ms-img-no { display: none; }
+		.ms-accuracy #ms-accuracy .strike { display: none }
 		.ms-accuracy span[data-time]:hover::after,
 		.ms-accuracy p > span[data-time]:first-child::after,
 		.ms-accuracy p > :first-child > span[data-time]:first-child::after,
@@ -147,10 +144,7 @@
 			content: attr(data-time-ms);
 		}
 
-		#dotcap { display: none; }
-		#dotcap-no { display: block; }
-		.auto-capitalize #dotcap { display: block; }
-		.auto-capitalize #dotcap-no { display: none; }
+		.auto-capitalize #capitalize .strike { display: none }
 
 		#time-editor {
 			font-family: monospace;
@@ -192,7 +186,7 @@
 <main>
 
 	<div class="head">
-		<img src="/yt-captions.png">
+		@!svgLogo()
 		@!videoDescriptor( { id, title, author, date, url } )
 	</div>
 
@@ -213,33 +207,33 @@
 
 <div id="menu" class="menu-off">
 	<div class="menu-item" id="burger">
-		<img src="/icons/burger.png">
+		@!svgBurger()
 	</div>
-	<div class="menu-item" onclick="msAccuracy()">
-		<img src="/icons/ms.png" id="ms-img"><img src="/icons/ms-no.png" id="ms-img-no">
+	<div class="menu-item" id="ms-accuracy" onclick="msAccuracy()">
+		@!svgMs()
 		<div class="menu-text">Switch&nbsp;time&nbsp;accuracy&nbsp;&nbsp;</div>
 	</div>
 	<div class="menu-item">
 		<label for="merge-with" style="cursor:pointer">
-			<img src="/icons/script.png">
+			@!svgSpeech()
 		</label>
 		<input id="merge-with" type="file" onchange="mergeWith(this.files)" style="display:none"/>
 		<div class="menu-text">Merge&nbsp;with&nbsp;script&nbsp;&nbsp;</div>
 	</div>
 	<div class="menu-item" onclick="saveCaptions()">
-		<img src="/icons/download.png">
+		@!svgDownload()
 		<div class="menu-text">Save&nbsp;current&nbsp;state&nbsp;&nbsp;</div>
 	</div>
 	<div class="menu-item" onclick="exportCaptions()">
-		<img src="/icons/Export.png">
+		@!svgExport({uniqueID:'foobar'})
 		<div class="menu-text">Export&nbsp;subtitles&nbsp;&nbsp;</div>
 	</div>
-	<div class="menu-item" onclick="toggleCapitalize()">
-		<img src="/icons/dotcap.png" id="dotcap"><img src="/icons/dotcap-no.png" id="dotcap-no">
+	<div class="menu-item" id="capitalize" onclick="toggleCapitalize()">
+		@!svgDotCap()
 		<div class="menu-text">Automatic&nbsp;capital&nbsp;letters&nbsp;&nbsp;</div>
 	</div>
 	<div class="menu-item" onclick="capitalizeSoloI()">
-		<img src="/icons/icap.png">
+		@!svgICap()
 		<div class="menu-text">Capitalize&nbsp;isolated&nbsp;“i”'s&nbsp;&nbsp;</div>
 	</div>
 	{{-- //IMPROVE italic, bold, underlined, font color --}}
@@ -304,7 +298,7 @@
 	}
 	
 	/** Capitalize all isoliated “i” in the editor. */
-	function capitalizeSoloI() {
+	function capitalizeSoloI() {  // BUG  Absorbs the words before “i”!
 		const editor = document.getElementById( 'captions' );
 		let lastChar = '';
 		let bufferedNode;

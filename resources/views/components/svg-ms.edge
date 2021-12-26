@@ -1,0 +1,11 @@
+@set( 'uniqueID', uniqueID || 'ms-clip-ID' )
+<svg viewBox="0 0 426 426" preserveAspectRatio="xMinYMin meet" version="1.1" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<clipPath id="{{ uniqueID }}">
+			<rect x="0" y="0" width="426" height="109"/>
+			<rect x="0" y="317" width="426" height="109"/>
+		</clipPath>
+	</defs>
+	<line class="icon-stroke strike" x1="22" y1="404" x2="404" y2="22" stroke-width="30" clip-path="url(#{{ uniqueID }})"/>
+	<text class="icon-txt" y="287" style="font-size: 266px; font-weight: bold">ms</text>
+</svg>
